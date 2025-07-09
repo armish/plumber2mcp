@@ -1,6 +1,23 @@
+# R specific
 .Rproj.user
 .Rhistory
-.Rdata
-.httr-oauth
+.RData
+.Ruserdata
+*.Rproj
+
+# Build artifacts
+*.tar.gz
+*.Rcheck/
+
+# OS files
 .DS_Store
-.quarto
+Thumbs.db
+
+# Logs
+*.log
+inst/examples/*.log
+
+# Temporary files
+*~
+*.swp
+*.swo

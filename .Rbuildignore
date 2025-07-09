@@ -1,1 +1,7 @@
 ^LICENSE\.md$
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^README\.Rmd$
+^\.gitignore$
+^inst/examples/.*\.log$
