@@ -12,7 +12,7 @@ if (plumber_file == "") {
 }
 
 pr <- plumb(plumber_file) %>%
-  pr_mcp() %>%
+  pr_mcp(transport = "http") %>%
   pr_run(port = 8000)
 
 # The API is now running with:

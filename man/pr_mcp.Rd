@@ -6,7 +6,7 @@
 \usage{
 pr_mcp(
   pr,
-  transport = "http",
+  transport,
   path = "/mcp",
   include_endpoints = NULL,
   exclude_endpoints = NULL,
@@ -18,7 +18,7 @@ pr_mcp(
 \arguments{
 \item{pr}{A Plumber router}
 
-\item{transport}{Transport method: "http" (default) or "stdio"}
+\item{transport}{Transport method: "http" or "stdio" (required)}
 
 \item{path}{The path to mount the MCP server (default: "/mcp") - only used for HTTP transport}
 

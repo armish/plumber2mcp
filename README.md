@@ -36,7 +36,7 @@ library(plumber2mcp)
 
 # Create and run a Plumber API with MCP support via HTTP
 pr <- pr("plumber.R") %>%
-  pr_mcp() %>%  # or pr_mcp(transport = "http")
+  pr_mcp(transport = "http") %>%
   pr_run(port = 8000)
 ```
 
@@ -125,23 +125,24 @@ These endpoints become MCP tools:
 ### Customizing MCP Path
 
 ```r
-pr %>% pr_mcp(path = "/my-mcp-server")
+pr %>% pr_mcp(transport = "http", path = "/my-mcp-server")
 ```
 
 ### Filtering Endpoints
 
 ```r
 # Include only specific endpoints
-pr %>% pr_mcp(include_endpoints = c("GET__echo", "POST__add"))
+pr %>% pr_mcp(transport = "http", include_endpoints = c("GET__echo", "POST__add"))
 
 # Exclude specific endpoints
-pr %>% pr_mcp(exclude_endpoints = c("POST__internal"))
+pr %>% pr_mcp(transport = "stdio", exclude_endpoints = c("POST__internal"))
 ```
 
 ### Custom Server Info
 
 ```r
 pr %>% pr_mcp(
+  transport = "http",
   server_name = "my-api-mcp",
   server_version = "1.0.0"
 )
@@ -180,7 +181,7 @@ library(plumber)
 library(plumber2mcp)
 
 pr <- pr("my_api.R") %>%
-  pr_mcp() %>%
+  pr_mcp(transport = "http") %>%
   pr_run(port = 8000)
 ```
 
@@ -246,7 +247,11 @@ This package implements the [Model Context Protocol](https://modelcontextprotoco
 Enable verbose logging:
 
 ```r
-pr %>% pr_mcp(debug = TRUE) %>% pr_run(port = 8000)
+# For stdio transport
+pr %>% pr_mcp(transport = "stdio", debug = TRUE)
+
+# For HTTP transport (debug not available)
+pr %>% pr_mcp(transport = "http") %>% pr_run(port = 8000)
 ```
 
 ## Contributing

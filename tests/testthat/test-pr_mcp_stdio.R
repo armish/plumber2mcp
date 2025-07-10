@@ -10,8 +10,11 @@ test_that("pr_mcp supports transport parameter", {
   pr_http <- pr_mcp(pr, transport = "http")
   expect_s3_class(pr_http, "Plumber")
   
+  # Missing transport throws error
+  expect_error(pr_mcp(pr), "Transport parameter is required")
+  
   # Unknown transport throws error
-  expect_error(pr_mcp(pr, transport = "unknown"), "Unknown transport")
+  expect_error(pr_mcp(pr, transport = "unknown"), "Unknown transport: 'unknown'. Must be 'http' or 'stdio'.")
 })
 
 test_that("process_mcp_request handles basic requests", {

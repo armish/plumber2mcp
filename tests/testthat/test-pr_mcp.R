@@ -4,7 +4,7 @@ test_that("pr_mcp adds MCP endpoints to plumber router", {
   pr$handle("GET", "/test", function() { list(msg = "test") })
   
   # Add MCP support
-  pr_with_mcp <- pr_mcp(pr)
+  pr_with_mcp <- pr_mcp(pr, transport = "http")
   
   # Check that MCP endpoints were added by looking at all paths
   all_paths <- unlist(lapply(pr_with_mcp$endpoints, function(group) {
@@ -16,14 +16,25 @@ test_that("pr_mcp adds MCP endpoints to plumber router", {
 })
 
 test_that("pr_mcp validates input is plumber router", {
-  expect_error(pr_mcp("not a router"), "Input must be a Plumber router object")
-  expect_error(pr_mcp(list()), "Input must be a Plumber router object")
-  expect_error(pr_mcp(NULL), "Input must be a Plumber router object")
+  expect_error(pr_mcp("not a router", transport = "http"), "Input must be a Plumber router object")
+  expect_error(pr_mcp(list(), transport = "http"), "Input must be a Plumber router object")
+  expect_error(pr_mcp(NULL, transport = "http"), "Input must be a Plumber router object")
+})
+
+test_that("pr_mcp requires transport parameter", {
+  pr <- plumber::pr()
+  expect_error(pr_mcp(pr), "Transport parameter is required. Choose 'http' or 'stdio'.")
+})
+
+test_that("pr_mcp validates transport parameter", {
+  pr <- plumber::pr()
+  expect_error(pr_mcp(pr, transport = "invalid"), "Unknown transport: 'invalid'. Must be 'http' or 'stdio'.")
+  expect_error(pr_mcp(pr, transport = ""), "Unknown transport: ''. Must be 'http' or 'stdio'.")
 })
 
 test_that("pr_mcp accepts custom path", {
   pr <- plumber::pr()
-  pr_with_mcp <- pr_mcp(pr, path = "/custom-mcp")
+  pr_with_mcp <- pr_mcp(pr, transport = "http", path = "/custom-mcp")
   
   all_paths <- unlist(lapply(pr_with_mcp$endpoints, function(group) {
     sapply(group, function(ep) ep$path)
@@ -35,7 +46,7 @@ test_that("pr_mcp accepts custom path", {
 
 test_that("pr_mcp accepts custom server info", {
   pr <- plumber::pr()
-  pr_with_mcp <- pr_mcp(pr, server_name = "test-server", server_version = "2.0.0")
+  pr_with_mcp <- pr_mcp(pr, transport = "http", server_name = "test-server", server_version = "2.0.0")
   
   # Find the server info endpoint
   server_info_endpoint <- NULL
@@ -243,7 +254,7 @@ test_that("Integration: Full MCP workflow works", {
   })
   
   # Add MCP support
-  pr_with_mcp <- pr_mcp(pr)
+  pr_with_mcp <- pr_mcp(pr, transport = "http")
   
   # Get the MCP handler directly
   handler <- plumber2mcp:::create_mcp_handler(
