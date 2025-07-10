@@ -486,13 +486,44 @@ create_help_function <- function(topic) {
         return(paste("No help found for topic:", topic))
       }
       
-      # Capture the help output
-      capture.output({
-        # This will show the help page content
-        tools::Rd2txt(utils:::.getHelpFile(help_file[1]))
-      })
+      # Create a temporary file to capture clean text output
+      temp_file <- tempfile(fileext = ".txt")
+      on.exit(unlink(temp_file))
+      
+      # Get the raw Rd content and convert to plain text file
+      rd_file <- utils:::.getHelpFile(help_file[1])
+      tools::Rd2txt(rd_file, out = temp_file)
+      
+      # Read the clean text from file
+      if (file.exists(temp_file)) {
+        clean_text <- readLines(temp_file, warn = FALSE)
+        
+        # Clean up any remaining underscore formatting
+        clean_text <- gsub("_([^_])_", "\\1", clean_text)
+        clean_text <- gsub("_", "", clean_text)
+        
+        return(clean_text)
+      } else {
+        return(paste("Error: Could not generate help text for", topic))
+      }
     }, error = function(e) {
-      paste("Error getting help for", topic, ":", e$message)
+      # Fallback: try to get basic help information
+      tryCatch({
+        # Simple approach - just get function signature and description
+        func_obj <- get(topic, envir = globalenv())
+        if (is.function(func_obj)) {
+          paste(
+            paste("Function:", topic),
+            paste("Usage:", paste(deparse(args(func_obj)), collapse = " ")),
+            "Use help() in R console for full documentation.",
+            sep = "\n"
+          )
+        } else {
+          paste("Topic:", topic, "- Use help() in R console for documentation.")
+        }
+      }, error = function(e2) {
+        paste("Help topic:", topic, "- Use help() in R console for documentation.")
+      })
     })
   }
 }
