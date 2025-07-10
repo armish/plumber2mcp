@@ -1,8 +1,8 @@
 # plumber2mcp
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/yourusername/plumber2mcp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/yourusername/plumber2mcp/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/yourusername/plumber2mcp/branch/main/graph/badge.svg)](https://app.codecov.io/gh/yourusername/plumber2mcp?branch=main)
+[![R-CMD-check](https://github.com/armish/plumber2mcp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/armish/plumber2mcp/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/armish/plumber2mcp/branch/main/graph/badge.svg)](https://app.codecov.io/gh/armish/plumber2mcp?branch=main)
 <!-- badges: end -->
 
 Add Model Context Protocol (MCP) support to your Plumber APIs with a single function call.
@@ -15,7 +15,7 @@ The Model Context Protocol (MCP) is a standard protocol that enables AI assistan
 
 ```r
 # Install from GitHub
-remotes::install_github("yourusername/plumber2mcp")
+remotes::install_github("armish/plumber2mcp")
 ```
 
 ### Dependencies
