@@ -2,7 +2,7 @@ Package: plumber2mcp
 Title: Add Model Context Protocol Support to Plumber APIs
 Version: 0.1.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+    person("Bulent Arman", "Aksoy", , "arman@aksoy.org", role = c("aut", "cre"))
 Description: Extends plumber APIs with Model Context Protocol (MCP) support,
     enabling AI assistants to discover and call your API endpoints as tools.
     Simply add pr_mcp() to your plumber pipeline to automatically expose all
