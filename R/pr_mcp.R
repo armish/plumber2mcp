@@ -464,8 +464,16 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
     pr = pr,
     uri = "/r/packages",
     func = function() {
-      pkgs <- installed.packages()[, c("Package", "Version", "Title")]
-      capture.output(print(as.data.frame(pkgs), row.names = FALSE))
+      pkgs <- installed.packages()
+      # Check which columns are available
+      available_cols <- colnames(pkgs)
+      desired_cols <- c("Package", "Version")
+      if ("Title" %in% available_cols) {
+        desired_cols <- c(desired_cols, "Title")
+      }
+      
+      pkg_info <- pkgs[, desired_cols, drop = FALSE]
+      capture.output(print(as.data.frame(pkg_info), row.names = FALSE))
     },
     name = "Installed R Packages",
     description = "List of installed R packages with versions and descriptions",
@@ -478,12 +486,18 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
 #' Create a help function for a specific topic
 #' @noRd
 create_help_function <- function(topic) {
+  # Force evaluation of topic to create proper closure
+  force(topic)
+  
   function() {
+    # Use the captured topic value
+    current_topic <- topic
+    
     tryCatch({
       # Get help content
-      help_file <- utils::help(topic, try.all.packages = TRUE)
+      help_file <- utils::help(current_topic, try.all.packages = TRUE)
       if (length(help_file) == 0) {
-        return(paste("No help found for topic:", topic))
+        return(paste("No help found for topic:", current_topic))
       }
       
       # Create a temporary file to capture clean text output
@@ -504,25 +518,25 @@ create_help_function <- function(topic) {
         
         return(clean_text)
       } else {
-        return(paste("Error: Could not generate help text for", topic))
+        return(paste("Error: Could not generate help text for", current_topic))
       }
     }, error = function(e) {
       # Fallback: try to get basic help information
       tryCatch({
         # Simple approach - just get function signature and description
-        func_obj <- get(topic, envir = globalenv())
+        func_obj <- get(current_topic, envir = globalenv())
         if (is.function(func_obj)) {
           paste(
-            paste("Function:", topic),
+            paste("Function:", current_topic),
             paste("Usage:", paste(deparse(args(func_obj)), collapse = " ")),
             "Use help() in R console for full documentation.",
             sep = "\n"
           )
         } else {
-          paste("Topic:", topic, "- Use help() in R console for documentation.")
+          paste("Topic:", current_topic, "- Use help() in R console for documentation.")
         }
       }, error = function(e2) {
-        paste("Help topic:", topic, "- Use help() in R console for documentation.")
+        paste("Help topic:", current_topic, "- Use help() in R console for documentation.")
       })
     })
   }
