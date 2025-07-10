@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "plumber2mcp": {
+      "command": "python3",
+      "args": ["stdio-wrapper.py"],
+      "cwd": "."
+    }
+  }
+}
