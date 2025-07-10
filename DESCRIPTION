@@ -7,7 +7,7 @@ Description: Extends plumber APIs with Model Context Protocol (MCP) support,
     enabling AI assistants to discover and call your API endpoints as tools.
     Simply add pr_mcp() to your plumber pipeline to automatically expose all
     endpoints via the MCP protocol.
-License: MIT + file LICENSE.md
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
