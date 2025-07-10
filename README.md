@@ -125,16 +125,66 @@ These endpoints become MCP tools:
 
 Resources allow AI assistants to read content from your R environment, such as documentation, data descriptions, or analysis results.
 
-### Adding Resources
+### Adding Custom Resources
 
 ```r
-pr %>% 
+# Create a Plumber API with resources
+pr <- pr() %>%
   pr_mcp(transport = "stdio") %>%
+  
+  # Add a resource that provides dataset information
   pr_mcp_resource(
-    uri = "/data/my-dataset",
-    func = function() capture.output(summary(my_data)),
-    name = "My Dataset Summary",
-    description = "Statistical summary of my dataset"
+    uri = "/data/iris-summary",
+    func = function() {
+      paste(
+        "Dataset: iris",
+        paste("Dimensions:", paste(dim(iris), collapse = " x ")),
+        "",
+        capture.output(summary(iris)),
+        sep = "\n"
+      )
+    },
+    name = "Iris Dataset Summary",
+    description = "Statistical summary and structure of the iris dataset"
+  ) %>%
+  
+  # Add a resource that shows current memory usage
+  pr_mcp_resource(
+    uri = "/system/memory",
+    func = function() {
+      mem <- gc()
+      paste(
+        "R Memory Usage:",
+        paste("Used (Mb):", round(sum(mem[,2]), 2)),
+        paste("Gc Trigger (Mb):", round(sum(mem[,6]), 2)),
+        "",
+        "Object sizes in workspace:",
+        capture.output(print(object.size(ls.str()), units = "Mb")),
+        sep = "\n"
+      )
+    },
+    name = "R Memory Usage",
+    description = "Current R session memory statistics"
+  ) %>%
+  
+  # Add a resource with model diagnostics
+  pr_mcp_resource(
+    uri = "/models/latest-lm",
+    func = function() {
+      # Example: fit a model and return diagnostics
+      model <- lm(mpg ~ wt + hp, data = mtcars)
+      paste(
+        "Linear Model: mpg ~ wt + hp",
+        "",
+        capture.output(summary(model)),
+        "",
+        "Diagnostic plots saved to: /tmp/lm_diagnostics.png",
+        sep = "\n"
+      )
+    },
+    name = "Latest Linear Model",
+    description = "Diagnostics for the most recent linear model",
+    mimeType = "text/plain"
   )
 ```
 
@@ -150,6 +200,62 @@ This automatically adds resources for:
 - R help topics (`/help/mean`, `/help/lm`, etc.)
 - R session information (`/r/session-info`)
 - Installed packages (`/r/packages`)
+
+### Dynamic Resources with Parameters
+
+While the current implementation doesn't support URI templates, you can create resources that adapt based on runtime conditions:
+
+```r
+# Create resources based on available data files
+data_files <- list.files("data/", pattern = "\\.csv$")
+
+pr <- pr()
+for (file in data_files) {
+  pr <- pr %>%
+    pr_mcp_resource(
+      uri = paste0("/data/", tools::file_path_sans_ext(file)),
+      func = local({
+        current_file <- file  # Capture the file name
+        function() {
+          data <- read.csv(file.path("data", current_file))
+          paste(
+            paste("File:", current_file),
+            paste("Rows:", nrow(data)),
+            paste("Columns:", paste(names(data), collapse = ", ")),
+            "",
+            "First 5 rows:",
+            capture.output(print(head(data, 5))),
+            sep = "\n"
+          )
+        }
+      }),
+      name = paste("Dataset:", tools::file_path_sans_ext(file)),
+      description = paste("Contents of", file)
+    )
+}
+```
+
+### Resource Usage Examples
+
+Once your MCP server is running with resources, AI assistants can:
+
+1. **Browse available resources** - The AI can list all resources to see what information is available
+2. **Read specific resources** - The AI can read resource content to understand your data and environment
+3. **Use resources for context** - The AI can reference resource information when answering questions or writing code
+
+Example interaction with an AI assistant:
+```
+You: "What datasets are available in this R session?"
+AI: *Lists resources and reads relevant ones*
+    "I can see you have the iris dataset available. Based on the 
+    /data/iris-summary resource, it has 150 observations of 5 variables..."
+
+You: "Can you help me analyze the relationship between Sepal.Length and Petal.Length?"
+AI: *Reads the iris summary resource for context*
+    "Based on the iris dataset summary, I can see that Sepal.Length ranges 
+    from 4.3 to 7.9 and Petal.Length from 1.0 to 6.9. Let me create a 
+    linear model to analyze their relationship..."
+```
 
 ## Advanced Usage
 

@@ -81,7 +81,7 @@ run_stdio_server <- function(tools, resources, server_name, server_version, pr, 
       request <- jsonlite::fromJSON(line, simplifyVector = FALSE)
       
       # Process request
-      response <- process_mcp_request(request, tools, resources, server_name, server_version, pr)
+      response <- process_mcp_request(request, tools, resources, server_name, server_version, pr, debug)
       
       # Write response to stdout (only if not NULL for notifications)
       if (!is.null(response)) {
@@ -124,7 +124,7 @@ run_stdio_server <- function(tools, resources, server_name, server_version, pr, 
 
 #' Process a single MCP request
 #' @noRd
-process_mcp_request <- function(request, tools, resources, server_name, server_version, pr) {
+process_mcp_request <- function(request, tools, resources, server_name, server_version, pr, debug = FALSE) {
   
   # Validate JSON-RPC
   if (is.null(request$jsonrpc) || request$jsonrpc != "2.0") {
@@ -133,6 +133,11 @@ process_mcp_request <- function(request, tools, resources, server_name, server_v
       id = request$id,
       error = list(code = -32600, message = "Invalid Request")
     ))
+  }
+  
+  # Debug: log the method being called
+  if (debug) {
+    message("Processing method: ", request$method)
   }
   
   # Route to appropriate handler
@@ -144,6 +149,10 @@ process_mcp_request <- function(request, tools, resources, server_name, server_v
     "tools/call" = handle_tools_call_stdio(request, tools, pr),
     "resources/list" = handle_resources_list_stdio(request, resources),
     "resources/read" = handle_resources_read_stdio(request, resources),
+    "resources/templates" = handle_resources_templates_stdio(request),
+    "resources/templates/list" = handle_resources_templates_stdio(request),
+    "resources/subscribe" = handle_resources_subscribe_stdio(request),
+    "resources/unsubscribe" = handle_resources_unsubscribe_stdio(request),
     {
       list(
         jsonrpc = "2.0",
@@ -286,6 +295,38 @@ handle_resources_read_stdio <- function(body, resources) {
       )
     )
   })
+}
+
+#' Handle resources/templates request for stdio transport
+#' @noRd
+handle_resources_templates_stdio <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = list(
+      resourceTemplates = list()  # Empty array - no dynamic templates supported yet
+    )
+  )
+}
+
+#' Handle resources/subscribe request for stdio transport
+#' @noRd
+handle_resources_subscribe_stdio <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = structure(list(), names = character(0))  # Empty object - subscriptions not supported
+  )
+}
+
+#' Handle resources/unsubscribe request for stdio transport
+#' @noRd
+handle_resources_unsubscribe_stdio <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = structure(list(), names = character(0))  # Empty object - subscriptions not supported
+  )
 }
 
 #' Handle tools/call request for stdio transport
