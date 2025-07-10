@@ -2,6 +2,9 @@
 #' @importFrom jsonlite toJSON
 NULL
 
+# Null-coalescing operator for convenience
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 #' Validate that input is a Plumber router
 #' @noRd
 validate_pr <- function(pr) {
@@ -359,4 +362,137 @@ handle_tools_call <- function(body, tools, pr) {
       )
     )
   })
+}
+
+#' Add a resource to an MCP-enabled Plumber router
+#'
+#' Resources allow AI assistants to read content from your R environment,
+#' such as documentation, data files, analysis results, or any other content
+#' you want to make available.
+#'
+#' @param pr A Plumber router object (must have MCP support added)
+#' @param uri The URI pattern for the resource (e.g., "/help/{topic}")
+#' @param func A function that returns the resource content
+#' @param name A human-readable name for the resource
+#' @param description A description of what the resource provides
+#' @param mimeType The MIME type of the resource content (default: "text/plain")
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Add a resource for R help topics
+#' pr %>% 
+#'   pr_mcp(transport = "stdio") %>%
+#'   pr_mcp_resource(
+#'     uri = "/help/mean",
+#'     func = function() capture.output(help("mean")),
+#'     name = "R Help: mean function",
+#'     description = "Documentation for the mean() function"
+#'   )
+#' }
+pr_mcp_resource <- function(pr, uri, func, name, description = NULL, mimeType = "text/plain") {
+  validate_pr(pr)
+  
+  # Check if this router has MCP support in its environment
+  env <- pr$environment
+  if (is.null(env$mcp_resources)) {
+    env$mcp_resources <- list()
+  }
+  
+  # Create resource definition
+  resource <- list(
+    uri = uri,
+    name = name,
+    description = description %||% paste("Resource:", uri),
+    mimeType = mimeType,
+    func = func
+  )
+  
+  # Add to router's resources in its environment
+  env$mcp_resources[[uri]] <- resource
+  
+  invisible(pr)
+}
+
+#' Add built-in R help resources to an MCP-enabled Plumber router
+#'
+#' This convenience function adds resources for R documentation that AI assistants
+#' can read to better understand R functions and packages.
+#'
+#' @param pr A Plumber router object (must have MCP support added)
+#' @param topics Character vector of help topics to expose (NULL for common topics)
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' pr %>% 
+#'   pr_mcp(transport = "stdio") %>%
+#'   pr_mcp_help_resources()
+#' }
+pr_mcp_help_resources <- function(pr, topics = NULL) {
+  validate_pr(pr)
+  
+  # Default topics if none specified
+  if (is.null(topics)) {
+    topics <- c("mean", "lm", "plot", "data.frame", "summary", "str", "head", "tail")
+  }
+  
+  # Add resources for each help topic
+  for (topic in topics) {
+    pr <- pr_mcp_resource(
+      pr = pr,
+      uri = paste0("/help/", topic),
+      func = create_help_function(topic),
+      name = paste("R Help:", topic),
+      description = paste("R documentation for the", topic, "function/topic"),
+      mimeType = "text/plain"
+    )
+  }
+  
+  # Add a general R session info resource
+  pr <- pr_mcp_resource(
+    pr = pr,
+    uri = "/r/session-info",
+    func = function() capture.output(sessionInfo()),
+    name = "R Session Information",
+    description = "Current R session information including version and loaded packages",
+    mimeType = "text/plain"
+  )
+  
+  # Add a resource for installed packages
+  pr <- pr_mcp_resource(
+    pr = pr,
+    uri = "/r/packages",
+    func = function() {
+      pkgs <- installed.packages()[, c("Package", "Version", "Title")]
+      capture.output(print(as.data.frame(pkgs), row.names = FALSE))
+    },
+    name = "Installed R Packages",
+    description = "List of installed R packages with versions and descriptions",
+    mimeType = "text/plain"
+  )
+  
+  invisible(pr)
+}
+
+#' Create a help function for a specific topic
+#' @noRd
+create_help_function <- function(topic) {
+  function() {
+    tryCatch({
+      # Get help content
+      help_file <- utils::help(topic, try.all.packages = TRUE)
+      if (length(help_file) == 0) {
+        return(paste("No help found for topic:", topic))
+      }
+      
+      # Capture the help output
+      capture.output({
+        # This will show the help page content
+        tools::Rd2txt(utils:::.getHelpFile(help_file[1]))
+      })
+    }, error = function(e) {
+      paste("Error getting help for", topic, ":", e$message)
+    })
+  }
 }

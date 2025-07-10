@@ -1,3 +1,6 @@
+# Null-coalescing operator for convenience
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 #' Run MCP server with stdio transport
 #'
 #' Creates an MCP server that communicates via standard input/output (stdio).
@@ -31,17 +34,20 @@ pr_mcp_stdio <- function(pr,
   # Extract tools (reuse existing function)
   tools <- extract_plumber_tools(pr, include_endpoints, exclude_endpoints)
   
+  # Extract resources from router environment (populated by pr_mcp_resource calls)
+  resources <- pr$environment$mcp_resources %||% list()
+  
   if (debug) {
-    message("Starting MCP stdio server with ", length(tools), " tools")
+    message("Starting MCP stdio server with ", length(tools), " tools and ", length(resources), " resources")
   }
   
   # Run stdio loop
-  run_stdio_server(tools, server_name, server_version, pr, debug)
+  run_stdio_server(tools, resources, server_name, server_version, pr, debug)
 }
 
 #' Run the stdio message loop
 #' @noRd
-run_stdio_server <- function(tools, server_name, server_version, pr, debug = FALSE) {
+run_stdio_server <- function(tools, resources, server_name, server_version, pr, debug = FALSE) {
   
   if (debug) {
     message("MCP stdio server ready, waiting for messages...")
@@ -75,7 +81,7 @@ run_stdio_server <- function(tools, server_name, server_version, pr, debug = FAL
       request <- jsonlite::fromJSON(line, simplifyVector = FALSE)
       
       # Process request
-      response <- process_mcp_request(request, tools, server_name, server_version, pr)
+      response <- process_mcp_request(request, tools, resources, server_name, server_version, pr)
       
       # Write response to stdout (only if not NULL for notifications)
       if (!is.null(response)) {
@@ -118,7 +124,7 @@ run_stdio_server <- function(tools, server_name, server_version, pr, debug = FAL
 
 #' Process a single MCP request
 #' @noRd
-process_mcp_request <- function(request, tools, server_name, server_version, pr) {
+process_mcp_request <- function(request, tools, resources, server_name, server_version, pr) {
   
   # Validate JSON-RPC
   if (is.null(request$jsonrpc) || request$jsonrpc != "2.0") {
@@ -136,6 +142,8 @@ process_mcp_request <- function(request, tools, server_name, server_version, pr)
     "ping" = handle_ping_stdio(request),
     "tools/list" = handle_tools_list_stdio(request, tools),
     "tools/call" = handle_tools_call_stdio(request, tools, pr),
+    "resources/list" = handle_resources_list_stdio(request, resources),
+    "resources/read" = handle_resources_read_stdio(request, resources),
     {
       list(
         jsonrpc = "2.0",
@@ -157,7 +165,8 @@ handle_initialize_stdio <- function(body, server_name, server_version) {
     result = list(
       protocolVersion = "2024-11-05",
       capabilities = list(
-        tools = structure(list(), names = character(0))  # Force empty object, not array
+        tools = structure(list(), names = character(0)),  # Force empty object, not array
+        resources = structure(list(), names = character(0))  # Force empty object, not array
       ),
       serverInfo = list(
         name = server_name,
@@ -201,6 +210,82 @@ handle_tools_list_stdio <- function(body, tools) {
       }))
     )
   )
+}
+
+#' Handle resources/list request for stdio transport
+#' @noRd
+handle_resources_list_stdio <- function(body, resources) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = list(
+      resources = unname(lapply(resources, function(resource) {
+        list(
+          uri = resource$uri,
+          name = resource$name,
+          description = resource$description,
+          mimeType = resource$mimeType %||% "text/plain"
+        )
+      }))
+    )
+  )
+}
+
+#' Handle resources/read request for stdio transport
+#' @noRd
+handle_resources_read_stdio <- function(body, resources) {
+  resource_uri <- body$params$uri
+  
+  if (!(resource_uri %in% names(resources))) {
+    return(list(
+      jsonrpc = "2.0",
+      id = body$id,
+      error = list(
+        code = -32602,
+        message = paste("Unknown resource:", resource_uri)
+      )
+    ))
+  }
+  
+  resource <- resources[[resource_uri]]
+  
+  # Execute the resource function
+  tryCatch({
+    # Get the function that generates the resource content
+    func <- resource$func
+    
+    # Execute the function to get content
+    content <- func()
+    
+    # Convert content to string if needed
+    if (!is.character(content)) {
+      content <- as.character(content)
+    }
+    
+    list(
+      jsonrpc = "2.0",
+      id = body$id,
+      result = list(
+        contents = list(
+          list(
+            uri = resource_uri,
+            mimeType = resource$mimeType %||% "text/plain",
+            text = paste(content, collapse = "\n")
+          )
+        )
+      )
+    )
+  }, error = function(e) {
+    list(
+      jsonrpc = "2.0",
+      id = body$id,
+      error = list(
+        code = -32603,
+        message = "Internal error",
+        data = as.character(e)
+      )
+    )
+  })
 }
 
 #' Handle tools/call request for stdio transport

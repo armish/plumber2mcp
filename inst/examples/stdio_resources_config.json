@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "plumber2mcp-resources": {
+      "command": "Rscript",
+      "args": ["run_mcp_server_with_resources.R"],
+      "cwd": "."
+    }
+  }
+}

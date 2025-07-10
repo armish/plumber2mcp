@@ -87,6 +87,7 @@ The `pr_mcp()` function automatically:
 2. **Creates MCP tools**: Converts each endpoint into an MCP tool with proper schema
 3. **Adds MCP endpoints**: Adds the necessary MCP protocol endpoints
 4. **Handles JSON-RPC**: Manages all MCP communication via JSON-RPC
+5. **Supports resources**: Allows AI assistants to read documentation and data from your R environment
 
 ## MCP Endpoints
 
@@ -119,6 +120,36 @@ function(a, b) {
 These endpoints become MCP tools:
 - `GET__echo` - Echo back a message
 - `POST__add` - Add two numbers
+
+## Resources Support
+
+Resources allow AI assistants to read content from your R environment, such as documentation, data descriptions, or analysis results.
+
+### Adding Resources
+
+```r
+pr %>% 
+  pr_mcp(transport = "stdio") %>%
+  pr_mcp_resource(
+    uri = "/data/my-dataset",
+    func = function() capture.output(summary(my_data)),
+    name = "My Dataset Summary",
+    description = "Statistical summary of my dataset"
+  )
+```
+
+### Built-in R Help Resources
+
+```r
+pr %>% 
+  pr_mcp(transport = "stdio") %>%
+  pr_mcp_help_resources()  # Adds help for common R functions
+```
+
+This automatically adds resources for:
+- R help topics (`/help/mean`, `/help/lm`, etc.)
+- R session information (`/r/session-info`)
+- Installed packages (`/r/packages`)
 
 ## Advanced Usage
 

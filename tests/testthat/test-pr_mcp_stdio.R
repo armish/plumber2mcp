@@ -32,7 +32,7 @@ test_that("process_mcp_request handles basic requests", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    init_request, tools, "test-server", "1.0.0", pr
+    init_request, tools, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -48,7 +48,7 @@ test_that("process_mcp_request handles basic requests", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    list_request, tools, "test-server", "1.0.0", pr
+    list_request, tools, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -88,7 +88,7 @@ test_that("stdio tool calls work correctly", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    call_request, tools, "test-server", "1.0.0", pr
+    call_request, tools, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -112,7 +112,7 @@ test_that("stdio ping handler works correctly", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    ping_request, list(), "test-server", "1.0.0", plumber::pr()
+    ping_request, list(), list(), "test-server", "1.0.0", plumber::pr()
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -134,7 +134,7 @@ test_that("stdio notifications/initialized handler works correctly", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    init_request, list(), "test-server", "1.0.0", plumber::pr()
+    init_request, list(), list(), "test-server", "1.0.0", plumber::pr()
   )
   
   # Should return NULL for notifications
