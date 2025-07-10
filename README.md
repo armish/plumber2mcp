@@ -28,19 +28,39 @@ This package requires:
 
 ## Quick Start
 
+### HTTP Transport (Default)
+
 ```r
 library(plumber)
 library(plumber2mcp)
 
-# Create and run a Plumber API with MCP support
+# Create and run a Plumber API with MCP support via HTTP
 pr <- pr("plumber.R") %>%
-  pr_mcp() %>%
+  pr_mcp() %>%  # or pr_mcp(transport = "http")
   pr_run(port = 8000)
 ```
 
 Your API now has:
 - Regular HTTP endpoints at `http://localhost:8000/`
 - MCP server at `http://localhost:8000/mcp`
+
+### Stdio Transport (Native MCP)
+
+```r
+library(plumber)
+library(plumber2mcp)
+
+# Create and run a Plumber API with native stdio transport
+pr <- pr("plumber.R") %>%
+  pr_mcp(transport = "stdio")
+
+# This blocks and handles stdio messages - perfect for MCP clients
+```
+
+Use with mcp-cli or other MCP clients:
+```bash
+mcp-cli --command "Rscript -e 'plumber::pr(\"api.R\") %>% plumber2mcp::pr_mcp(transport=\"stdio\")'"
+```
 
 ## How It Works
 
