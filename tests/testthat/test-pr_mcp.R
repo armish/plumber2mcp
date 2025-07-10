@@ -298,3 +298,28 @@ test_that("Integration: Full MCP workflow works", {
   result_data <- jsonlite::fromJSON(result_text)
   expect_equal(result_data$result, 20)
 })
+
+test_that("empty properties serializes as object not array", {
+  pr <- plumber::pr()
+  # Function with no parameters
+  pr$handle("GET", "/no-params", function() { list(msg = "no params") })
+  # Function with parameters
+  pr$handle("POST", "/with-params", function(a, b) { list(result = a + b) })
+  
+  tools <- extract_plumber_tools(pr, NULL, NULL)
+  
+  # Test that function with no parameters has properties as object
+  no_params_tool <- tools[["GET__no-params"]]
+  expect_true(is.list(no_params_tool$inputSchema$properties))
+  expect_equal(length(no_params_tool$inputSchema$properties), 0)
+  
+  # Test JSON serialization - properties should be object, not array
+  json <- jsonlite::toJSON(no_params_tool$inputSchema, auto_unbox = TRUE)
+  parsed <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  expect_true(is.list(parsed$properties))
+  expect_false(is.null(names(parsed$properties)))
+  
+  # Test that function with parameters works normally
+  with_params_tool <- tools[["POST__with-params"]]
+  expect_true(length(with_params_tool$inputSchema$properties) > 0)
+})

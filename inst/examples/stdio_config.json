@@ -2,7 +2,7 @@
   "mcpServers": {
     "plumber2mcp-stdio": {
       "command": "Rscript",
-      "args": ["-e", "setwd('inst/examples'); source('run_mcp_server_stdio.R')"],
+      "args": ["run_mcp_server_stdio.R"],
       "cwd": "."
     }
   }

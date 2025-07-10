@@ -202,7 +202,7 @@ create_input_schema <- function(endpoint) {
   if (is.null(func)) {
     return(list(
       type = "object",
-      properties = list(),
+      properties = structure(list(), names = character(0)),
       required = character()
     ))
   }
@@ -239,6 +239,11 @@ create_input_schema <- function(endpoint) {
     if (!is_optional) {
       required <- c(required, arg_name)
     }
+  }
+  
+  # Ensure properties is serialized as object, not array when empty
+  if (length(properties) == 0) {
+    properties <- structure(list(), names = character(0))
   }
   
   list(
