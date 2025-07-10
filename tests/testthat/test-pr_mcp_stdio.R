@@ -100,3 +100,40 @@ test_that("stdio tool calls work correctly", {
   result_data <- jsonlite::fromJSON(result_json)
   expect_equal(result_data$echo, "hello")
 })
+
+test_that("stdio ping handler works correctly", {
+  ping_request <- list(
+    jsonrpc = "2.0",
+    id = 1,
+    method = "ping"
+  )
+  
+  response <- plumber2mcp:::process_mcp_request(
+    ping_request, list(), "test-server", "1.0.0", plumber::pr()
+  )
+  
+  expect_equal(response$jsonrpc, "2.0")
+  expect_equal(response$id, 1)
+  expect_true("result" %in% names(response))
+  
+  # Check that result is an object, not array
+  json <- jsonlite::toJSON(response$result, auto_unbox = TRUE)
+  parsed <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  expect_true(is.list(parsed))
+  expect_false(is.null(names(parsed)))
+})
+
+test_that("stdio notifications/initialized handler works correctly", {
+  init_request <- list(
+    jsonrpc = "2.0",
+    method = "notifications/initialized",
+    params = list()
+  )
+  
+  response <- plumber2mcp:::process_mcp_request(
+    init_request, list(), "test-server", "1.0.0", plumber::pr()
+  )
+  
+  # Should return NULL for notifications
+  expect_null(response)
+})

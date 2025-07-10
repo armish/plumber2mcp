@@ -3,8 +3,13 @@
 # This script demonstrates running an MCP server using stdio transport.
 # This is the standard transport for MCP clients like mcp-cli, Claude Desktop, etc.
 
+# Load the package from source if in development
+if (file.exists("../../DESCRIPTION")) {
+  devtools::load_all("../..")
+} else {
+  library(plumber2mcp)
+}
 library(plumber)
-library(plumber2mcp)
 
 # Create and configure the API
 # Get the path to the example plumber.R file

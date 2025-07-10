@@ -58,8 +58,25 @@ pr <- pr("plumber.R") %>%
 ```
 
 Use with mcp-cli or other MCP clients:
+
+1. Create a `server_config.json` file:
+```json
+{
+  "mcpServers": {
+    "plumber2mcp": {
+      "command": "Rscript",
+      "args": ["-e", "plumber::pr('api.R') %>% plumber2mcp::pr_mcp(transport='stdio')"],
+      "cwd": "."
+    }
+  }
+}
+```
+
+2. Test the connection:
 ```bash
-mcp-cli --command "Rscript -e 'plumber::pr(\"api.R\") %>% plumber2mcp::pr_mcp(transport=\"stdio\")'"
+mcp-cli servers  # Should show your server as "Ready"
+mcp-cli tools    # List available tools
+mcp-cli cmd --tool GET__echo --tool-args '{"msg": "Hello!"}'  # Call a tool
 ```
 
 ## How It Works

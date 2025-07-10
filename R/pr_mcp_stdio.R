@@ -77,13 +77,17 @@ run_stdio_server <- function(tools, server_name, server_version, pr, debug = FAL
       # Process request
       response <- process_mcp_request(request, tools, server_name, server_version, pr)
       
-      # Write response to stdout
-      response_json <- jsonlite::toJSON(response, auto_unbox = TRUE, null = "null")
-      cat(response_json, "\n", sep = "", file = stdout())
-      flush(stdout())
-      
-      if (debug) {
-        message("Sent: ", response_json)
+      # Write response to stdout (only if not NULL for notifications)
+      if (!is.null(response)) {
+        response_json <- jsonlite::toJSON(response, auto_unbox = TRUE, null = "null")
+        cat(response_json, "\n", sep = "", file = stdout())
+        flush(stdout())
+        
+        if (debug) {
+          message("Sent: ", response_json)
+        }
+      } else if (debug) {
+        message("No response (notification)")
       }
       
     }, error = function(e) {
@@ -128,6 +132,8 @@ process_mcp_request <- function(request, tools, server_name, server_version, pr)
   # Route to appropriate handler
   result <- switch(request$method,
     "initialize" = handle_initialize_stdio(request, server_name, server_version),
+    "notifications/initialized" = handle_notifications_initialized_stdio(request),
+    "ping" = handle_ping_stdio(request),
     "tools/list" = handle_tools_list_stdio(request, tools),
     "tools/call" = handle_tools_call_stdio(request, tools, pr),
     {
@@ -158,6 +164,24 @@ handle_initialize_stdio <- function(body, server_name, server_version) {
         version = server_version
       )
     )
+  )
+}
+
+#' Handle notifications/initialized request for stdio transport
+#' @noRd
+handle_notifications_initialized_stdio <- function(body) {
+  # This is a notification, no response needed
+  # Return NULL to indicate no response
+  NULL
+}
+
+#' Handle ping request for stdio transport
+#' @noRd
+handle_ping_stdio <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = structure(list(), names = character(0))  # Force empty object, not array
   )
 }
 
