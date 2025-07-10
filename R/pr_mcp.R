@@ -14,18 +14,48 @@ validate_pr <- function(pr) {
 #' Add MCP (Model Context Protocol) support to a Plumber router
 #'
 #' @param pr A Plumber router
-#' @param path The path to mount the MCP server (default: "/mcp")
+#' @param transport Transport method: "http" (default) or "stdio"
+#' @param path The path to mount the MCP server (default: "/mcp") - only used for HTTP transport
 #' @param include_endpoints Endpoints to include as MCP tools (NULL for all)
 #' @param exclude_endpoints Endpoints to exclude from MCP tools
 #' @param server_name Name of the MCP server
 #' @param server_version Version of the MCP server
+#' @param debug Logical, whether to write debug messages (stdio transport only)
 #' @export
 pr_mcp <- function(pr,
+                   transport = "http",
                    path = "/mcp",
                    include_endpoints = NULL,
                    exclude_endpoints = NULL,
                    server_name = "plumber-mcp",
-                   server_version = "0.1.0") {
+                   server_version = "0.1.0",
+                   debug = FALSE) {
+  
+  validate_pr(pr)
+  
+  if (transport == "stdio") {
+    # Stdio transport blocks and runs the server
+    pr_mcp_stdio(pr, include_endpoints, exclude_endpoints, server_name, server_version, debug)
+  } else if (transport == "http") {
+    # HTTP transport adds endpoints and returns the router
+    pr_mcp_http(pr, path, include_endpoints, exclude_endpoints, server_name, server_version)
+  } else {
+    stop("Unknown transport: ", transport, ". Use 'http' or 'stdio'.")
+  }
+}
+
+#' Add MCP support via HTTP transport
+#' 
+#' This is the original pr_mcp implementation that adds HTTP endpoints
+#' 
+#' @inheritParams pr_mcp
+#' @export
+pr_mcp_http <- function(pr,
+                        path = "/mcp",
+                        include_endpoints = NULL,
+                        exclude_endpoints = NULL,
+                        server_name = "plumber-mcp",
+                        server_version = "0.1.0") {
   
   validate_pr(pr)
   

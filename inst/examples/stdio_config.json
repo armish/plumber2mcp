@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "plumber2mcp-stdio": {
+      "command": "Rscript",
+      "args": ["run_mcp_server_stdio.R"],
+      "cwd": "."
+    }
+  }
+}

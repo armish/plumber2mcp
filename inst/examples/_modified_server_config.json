@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "plumber2mcp": {
+      "command": "python3",
+      "args": [
+        "stdio-wrapper.py"
+      ],
+      "cwd": ".",
+      "env": {
+        "PYTHONWARNINGS": "ignore",
+        "LOG_LEVEL": "WARNING",
+        "LOGGING_LEVEL": "WARNING",
+        "CHUK_LOG_LEVEL": "WARNING",
+        "CHUK_MCP_LOG_LEVEL": "WARNING",
+        "MCP_LOG_LEVEL": "WARNING",
+        "CHUK_MCP_RUNTIME_LOG_LEVEL": "ERROR",
+        "CHUK_SESSIONS_LOG_LEVEL": "ERROR",
+        "CHUK_ARTIFACTS_LOG_LEVEL": "ERROR",
+        "PYTHONPATH_LOGGING_LEVEL": "WARNING"
+      }
+    }
+  }
+}
