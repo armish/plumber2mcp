@@ -35,7 +35,7 @@ library(plumber)
 library(plumber2mcp)
 
 # Create and run a Plumber API with MCP support via HTTP
-pr <- pr("plumber.R") %>%
+pr("plumber.R") %>%
   pr_mcp(transport = "http") %>%
   pr_run(port = 8000)
 ```
@@ -51,10 +51,8 @@ library(plumber)
 library(plumber2mcp)
 
 # Create and run a Plumber API with native stdio transport
-pr <- pr("plumber.R") %>%
+pr("plumber.R") %>%
   pr_mcp(transport = "stdio")
-
-# This blocks and handles stdio messages - perfect for MCP clients
 ```
 
 Use with mcp-cli or other MCP clients:
@@ -323,7 +321,7 @@ Resources allow AI assistants to read content from your R environment, such as d
 
 ```r
 # Create a Plumber API with resources
-pr <- pr() %>%
+pr(...) %>%
   pr_mcp(transport = "stdio") %>%
   
   # Add a resource that provides dataset information
@@ -385,7 +383,7 @@ pr <- pr() %>%
 ### Built-in R Help Resources
 
 ```r
-pr %>% 
+pr(...) %>% 
   pr_mcp(transport = "stdio") %>%
   pr_mcp_help_resources()  # Adds help for common R functions
 ```
@@ -403,9 +401,9 @@ While the current implementation doesn't support URI templates, you can create r
 # Create resources based on available data files
 data_files <- list.files("data/", pattern = "\\.csv$")
 
-pr <- pr()
+my_pr <- pr(...)
 for (file in data_files) {
-  pr <- pr %>%
+  my_pr <- my_pr %>%
     pr_mcp_resource(
       uri = paste0("/data/", tools::file_path_sans_ext(file)),
       func = local({
@@ -456,23 +454,23 @@ AI: *Reads the iris summary resource for context*
 ### Customizing MCP Path
 
 ```r
-pr %>% pr_mcp(transport = "http", path = "/my-mcp-server")
+my_pr %>% pr_mcp(transport = "http", path = "/my-mcp-server")
 ```
 
 ### Filtering Endpoints
 
 ```r
 # Include only specific endpoints
-pr %>% pr_mcp(transport = "http", include_endpoints = c("GET__echo", "POST__add"))
+my_pr %>% pr_mcp(transport = "http", include_endpoints = c("GET__echo", "POST__add"))
 
 # Exclude specific endpoints
-pr %>% pr_mcp(transport = "stdio", exclude_endpoints = c("POST__internal"))
+my_pr %>% pr_mcp(transport = "stdio", exclude_endpoints = c("POST__internal"))
 ```
 
 ### Custom Server Info
 
 ```r
-pr %>% pr_mcp(
+my_pr %>% pr_mcp(
   transport = "http",
   server_name = "my-api-mcp",
   server_version = "1.0.0"
@@ -511,7 +509,7 @@ function(n) {
 library(plumber)
 library(plumber2mcp)
 
-pr <- pr("my_api.R") %>%
+pr("my_api.R") %>%
   pr_mcp(transport = "http") %>%
   pr_run(port = 8000)
 ```
@@ -576,7 +574,7 @@ This package implements the [Model Context Protocol](https://modelcontextprotoco
 library(plumber)
 library(plumber2mcp)
 
-pr <- pr("api.R") %>%
+pr("api.R") %>%
   pr_mcp(transport = "http") %>%
   pr_run(port = 8000)
 ```
@@ -614,10 +612,10 @@ Enable verbose logging:
 
 ```r
 # For stdio transport
-pr %>% pr_mcp(transport = "stdio", debug = TRUE)
+my_pr %>% pr_mcp(transport = "stdio", debug = TRUE)
 
 # For HTTP transport (debug not available)
-pr %>% pr_mcp(transport = "http") %>% pr_run(port = 8000)
+my_pr %>% pr_mcp(transport = "http") %>% pr_run(port = 8000)
 ```
 
 ## Contributing
