@@ -1,6 +1,6 @@
 Package: plumber2mcp
 Title: Add Model Context Protocol Support to Plumber APIs
-Version: 0.1.0
+Version: 0.2.0
 Author: Bulent Arman Aksoy
 Maintainer: Bulent Arman Aksoy <arman@aksoy.org>
 Authors@R: 

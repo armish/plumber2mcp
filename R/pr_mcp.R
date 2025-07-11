@@ -31,7 +31,7 @@ pr_mcp <- function(pr,
                    include_endpoints = NULL,
                    exclude_endpoints = NULL,
                    server_name = "plumber-mcp",
-                   server_version = "0.1.0",
+                   server_version = "0.2.0",
                    debug = FALSE) {
   
   validate_pr(pr)
@@ -63,7 +63,7 @@ pr_mcp_http <- function(pr,
                         include_endpoints = NULL,
                         exclude_endpoints = NULL,
                         server_name = "plumber-mcp",
-                        server_version = "0.1.0") {
+                        server_version = "0.2.0") {
   
   validate_pr(pr)
   
