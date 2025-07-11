@@ -113,8 +113,14 @@ create_mcp_handler <- function(pr, include_endpoints, exclude_endpoints, server_
       # Route to appropriate handler based on method
       result <- switch(body$method,
         "initialize" = handle_initialize(body, server_name, server_version),
+        "ping" = handle_ping(body),
         "tools/list" = handle_tools_list(body, tools),
         "tools/call" = handle_tools_call(body, tools, pr),
+        "resources/list" = handle_resources_list(body, pr),
+        "resources/read" = handle_resources_read(body, pr),
+        "resources/templates" = handle_resources_templates(body),
+        "resources/subscribe" = handle_resources_subscribe(body),
+        "resources/unsubscribe" = handle_resources_unsubscribe(body),
         {
           list(
             jsonrpc = "2.0",
@@ -267,7 +273,8 @@ handle_initialize <- function(body, server_name, server_version) {
     result = list(
       protocolVersion = "2024-11-05",
       capabilities = list(
-        tools = list()
+        tools = structure(list(), names = character(0)),  # Force empty object, not array
+        resources = structure(list(), names = character(0))  # Force empty object, not array
       ),
       serverInfo = list(
         name = server_name,
@@ -364,6 +371,130 @@ handle_tools_call <- function(body, tools, pr) {
       )
     )
   })
+}
+
+#' Handle ping request for HTTP transport
+#' @noRd
+handle_ping <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = structure(list(), names = character(0))  # Force empty object, not array
+  )
+}
+
+#' Handle resources/list request for HTTP transport
+#' @noRd
+handle_resources_list <- function(body, pr) {
+  # Extract resources from router environment
+  resources <- pr$environment$mcp_resources %||% list()
+  
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = list(
+      resources = unname(lapply(resources, function(resource) {
+        list(
+          uri = resource$uri,
+          name = resource$name,
+          description = resource$description,
+          mimeType = resource$mimeType %||% "text/plain"
+        )
+      }))
+    )
+  )
+}
+
+#' Handle resources/read request for HTTP transport
+#' @noRd
+handle_resources_read <- function(body, pr) {
+  resource_uri <- body$params$uri
+  
+  # Extract resources from router environment
+  resources <- pr$environment$mcp_resources %||% list()
+  
+  if (!(resource_uri %in% names(resources))) {
+    return(list(
+      jsonrpc = "2.0",
+      id = body$id,
+      error = list(
+        code = -32602,
+        message = paste("Unknown resource:", resource_uri)
+      )
+    ))
+  }
+  
+  resource <- resources[[resource_uri]]
+  
+  # Execute the resource function
+  tryCatch({
+    # Get the function that generates the resource content
+    func <- resource$func
+    
+    # Execute the function to get content
+    content <- func()
+    
+    # Convert content to string if needed
+    if (!is.character(content)) {
+      content <- as.character(content)
+    }
+    
+    list(
+      jsonrpc = "2.0",
+      id = body$id,
+      result = list(
+        contents = list(
+          list(
+            uri = resource_uri,
+            mimeType = resource$mimeType %||% "text/plain",
+            text = paste(content, collapse = "\n")
+          )
+        )
+      )
+    )
+  }, error = function(e) {
+    list(
+      jsonrpc = "2.0",
+      id = body$id,
+      error = list(
+        code = -32603,
+        message = "Internal error",
+        data = as.character(e)
+      )
+    )
+  })
+}
+
+#' Handle resources/templates request for HTTP transport
+#' @noRd
+handle_resources_templates <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = list(
+      resourceTemplates = list()  # Empty array - no dynamic templates supported yet
+    )
+  )
+}
+
+#' Handle resources/subscribe request for HTTP transport
+#' @noRd
+handle_resources_subscribe <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = structure(list(), names = character(0))  # Empty object - subscriptions not supported
+  )
+}
+
+#' Handle resources/unsubscribe request for HTTP transport
+#' @noRd
+handle_resources_unsubscribe <- function(body) {
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = structure(list(), names = character(0))  # Empty object - subscriptions not supported
+  )
 }
 
 #' Add a resource to an MCP-enabled Plumber router
