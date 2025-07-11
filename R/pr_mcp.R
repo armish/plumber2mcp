@@ -78,8 +78,8 @@ pr_mcp_http <- function(pr,
   
   # Mount MCP endpoints
   pr %>%
-    pr_post(paste0(path, "/messages"), mcp_handler$handle_message, serializer = serializer_json()) %>%
-    pr_get(path, mcp_handler$server_info, serializer = serializer_json())
+    pr_post(paste0(path, "/messages"), mcp_handler$handle_message, serializer = serializer_json(auto_unbox = TRUE)) %>%
+    pr_get(path, mcp_handler$server_info, serializer = serializer_json(auto_unbox = TRUE))
   
   invisible(pr)
 }

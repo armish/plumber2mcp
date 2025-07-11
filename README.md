@@ -371,6 +371,38 @@ This package implements the [Model Context Protocol](https://modelcontextprotoco
 - **Tool Execution**: Converts MCP tool calls to Plumber endpoint requests
 - **Error Handling**: Properly formats errors in MCP response format
 
+## Testing with MCP Inspector
+
+[MCP Inspector](https://github.com/modelcontextprotocol/inspector) is a tool for testing and debugging MCP servers.
+
+### Using MCP Inspector with HTTP Transport
+
+1. Start your plumber API with HTTP transport:
+```r
+library(plumber)
+library(plumber2mcp)
+
+pr <- pr("api.R") %>%
+  pr_mcp(transport = "http") %>%
+  pr_run(port = 8000)
+```
+
+2. In a new terminal, navigate to the examples directory:
+```bash
+cd /path/to/plumber2mcp/inst/examples
+mcp-inspector --config http_wrapper_config.json --server plumber2mcp
+```
+
+The `stdio-wrapper.py` script bridges MCP Inspector's stdio interface to your HTTP server.
+
+### Using MCP Inspector with Stdio Transport
+
+Use the stdio configuration directly:
+```bash
+cd /path/to/plumber2mcp/inst/examples
+mcp-inspector --config stdio_config.json --server plumber2mcp
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -378,6 +410,9 @@ This package implements the [Model Context Protocol](https://modelcontextprotoco
 1. **Port already in use**: Change the port number in `pr_run(port = 8001)`
 2. **MCP endpoint not found**: Ensure you called `pr_mcp()` before `pr_run()`
 3. **Tools not showing up**: Check that your Plumber endpoints have proper annotations
+4. **MCP Inspector connection error**: 
+   - For HTTP: Ensure the server is running on port 8000 before starting MCP Inspector
+   - Check that the `cwd` path in config files points to the correct directory
 
 ### Debug Mode
 

@@ -11,21 +11,24 @@ import urllib.error
 
 MCP_ENDPOINT = "http://localhost:8000/mcp/messages"
 
-def fix_r_json(obj):
+def fix_r_json(obj, parent_key=None):
     """Fix all R jsonlite serialization issues"""
     if obj is None:
+        # Special case: properties should never be null, always empty object
+        if parent_key == "properties":
+            return {}
         return None
     elif isinstance(obj, list):
-        if len(obj) == 1:
-            # Convert single-element arrays to scalars
-            return fix_r_json(obj[0])
+        if len(obj) == 1 and parent_key not in ["tools", "resources", "content", "required", "resourceTemplates"]:
+            # Convert single-element arrays to scalars (except for specific keys that should remain arrays)
+            return fix_r_json(obj[0], parent_key)
         else:
             # Process array elements
-            return [fix_r_json(item) for item in obj]
+            return [fix_r_json(item, parent_key) for item in obj]
     elif isinstance(obj, dict):
         if len(obj) == 0:
-            # Empty dict - context dependent
-            return None  # Most cases empty dict should be None
+            # Empty dict should remain empty dict in most cases
+            return {}
         
         # Process dictionary recursively
         fixed = {}
@@ -47,7 +50,7 @@ def fix_r_json(obj):
                 fixed[k] = []
             elif k == "content" and isinstance(v, list):
                 # content is already an array, just fix nested arrays
-                fixed[k] = [fix_r_json(item) for item in v]
+                fixed[k] = [fix_r_json(item, k) for item in v]
             elif k == "error" and isinstance(v, dict):
                 # Process error object specially
                 error_fixed = {}
@@ -58,8 +61,8 @@ def fix_r_json(obj):
                         error_fixed[ek] = ev
                 fixed[k] = error_fixed
             else:
-                # Recursive fix
-                fixed[k] = fix_r_json(v)
+                # Recursive fix with key context
+                fixed[k] = fix_r_json(v, k)
         return fixed
     else:
         return obj
