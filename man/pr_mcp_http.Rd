@@ -10,7 +10,7 @@ pr_mcp_http(
   include_endpoints = NULL,
   exclude_endpoints = NULL,
   server_name = "plumber-mcp",
-  server_version = "0.2.0"
+  server_version = "0.3.0"
 )
 }
 \arguments{
