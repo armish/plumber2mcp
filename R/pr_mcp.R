@@ -33,7 +33,7 @@ pr_mcp <- function(pr,
                    include_endpoints = NULL,
                    exclude_endpoints = NULL,
                    server_name = "plumber-mcp",
-                   server_version = "0.2.0",
+                   server_version = "0.3.0",
                    debug = FALSE) {
   
   validate_pr(pr)
@@ -65,7 +65,7 @@ pr_mcp_http <- function(pr,
                         include_endpoints = NULL,
                         exclude_endpoints = NULL,
                         server_name = "plumber-mcp",
-                        server_version = "0.2.0") {
+                        server_version = "0.3.0") {
   
   validate_pr(pr)
   
@@ -188,11 +188,14 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
           next
         }
         
-        # Create tool definition
+        # Create tool definition with enhanced description
+        enhanced_description <- create_enhanced_description(endpoint, verb, path)
+        
         tool <- list(
           name = endpoint_id,
-          description = if (is.null(endpoint$comments)) paste("Endpoint:", verb, path) else endpoint$comments,
+          description = enhanced_description,
           inputSchema = create_input_schema(endpoint),
+          outputSchema = create_output_schema(endpoint),
           endpoint = endpoint,
           verb = verb
         )
@@ -205,7 +208,85 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
   tools
 }
 
-#' Create input schema for an endpoint
+#' Create enhanced description using Plumber's parsed roxygen information
+#' @noRd
+create_enhanced_description <- function(endpoint, verb, path) {
+  # Start with the title from comments
+  title <- if (!is.null(endpoint$comments) && 
+            length(endpoint$comments) > 0 && 
+            !is.na(endpoint$comments) &&
+            nchar(trimws(endpoint$comments)) > 0) {
+    trimws(endpoint$comments)
+  } else {
+    paste("Endpoint:", verb, path)
+  }
+  
+  # Add the detailed description if available
+  description <- if (!is.null(endpoint$description) && 
+                    length(endpoint$description) > 0 && 
+                    !is.na(endpoint$description) &&
+                    nchar(trimws(endpoint$description)) > 0) {
+    trimws(endpoint$description)
+  } else {
+    ""
+  }
+  
+  # Build the complete description
+  result <- title
+  
+  if (description != "" && description != title) {
+    result <- paste(result, "\n\n", description, sep = "")
+  }
+  
+  # Add parameter information summary
+  if (length(endpoint$params) > 0) {
+    result <- paste(result, "\n\nParameters:", sep = "")
+    
+    # Get function formals to match parameter names
+    func <- endpoint$getFunc()
+    if (!is.null(func)) {
+      formals_list <- formals(func)
+      param_names <- names(formals_list)
+      param_names <- param_names[!param_names %in% c("req", "res", "...")]
+      
+      for (i in seq_along(endpoint$params)) {
+        if (i <= length(param_names)) {
+          param_name <- param_names[i]
+          param_info <- endpoint$params[[i]]
+          
+          param_line <- paste("- ", param_name, sep = "")
+          
+          # Handle param_info safely - could be list or atomic vector
+          if (is.list(param_info) && !is.null(param_info$type)) {
+            param_line <- paste(param_line, " (", param_info$type, ")", sep = "")
+          } else if (is.character(param_info) && length(param_info) == 1) {
+            param_line <- paste(param_line, " (", param_info, ")", sep = "")
+          }
+          
+          # Add default value if parameter is optional
+          default_val <- formals_list[[param_name]]
+          if (!missing(default_val)) {
+            param_line <- paste(param_line, " [default: ", format(default_val), "]", sep = "")
+          }
+          
+          # Handle description safely
+          if (is.list(param_info) && !is.null(param_info$desc) && nchar(trimws(param_info$desc)) > 0) {
+            param_line <- paste(param_line, ": ", trimws(param_info$desc), sep = "")
+          }
+          
+          result <- paste(result, "\n", param_line, sep = "")
+        }
+      }
+    }
+  }
+  
+  # Add endpoint information
+  result <- paste(result, "\n\nHTTP Method: ", toupper(verb), "\nPath: ", path, sep = "")
+  
+  result
+}
+
+#' Create enhanced input schema using Plumber's parsed roxygen information
 #' @noRd
 create_input_schema <- function(endpoint) {
   # Get function arguments
@@ -218,34 +299,61 @@ create_input_schema <- function(endpoint) {
     ))
   }
   
-  args <- names(formals(func))
+  formals_list <- formals(func)
+  args <- names(formals_list)
   
   properties <- list()
   required <- character()
+  
+  # Create a lookup for plumber-parsed parameters
+  plumber_params <- list()
+  if (length(endpoint$params) > 0) {
+    param_names <- names(formals_list)
+    param_names <- param_names[!param_names %in% c("req", "res", "...")]
+    
+    for (i in seq_along(endpoint$params)) {
+      if (i <= length(param_names)) {
+        plumber_params[[param_names[i]]] <- endpoint$params[[i]]
+      }
+    }
+  }
   
   # Extract parameters from function arguments
   for (arg_name in args) {
     if (arg_name %in% c("req", "res", "...")) next
     
     # Check if parameter has a default value (making it optional)
-    default_val <- formals(func)[[arg_name]]
+    default_val <- formals_list[[arg_name]]
     is_optional <- !missing(default_val)
     
-    # Try to get parameter description from comments
-    param_desc <- paste("Parameter", arg_name)
-    if (!is.null(endpoint$comments)) {
-      # Parse roxygen-style comments for @param descriptions
-      param_pattern <- paste0("@param\\s+", arg_name, "\\s+(.+)")
-      matches <- regmatches(endpoint$comments, regexec(param_pattern, endpoint$comments))
-      if (length(matches[[1]]) > 1) {
-        param_desc <- matches[[1]][2]
+    # Get parameter info from plumber's parsing
+    param_info <- plumber_params[[arg_name]]
+    
+    # Build property definition
+    property <- list(
+      type = if (!is.null(param_info) && (is.list(param_info) && !is.null(param_info$type))) {
+        map_plumber_type_to_json_schema(param_info$type)
+      } else if (!is.null(param_info) && is.character(param_info)) {
+        # Handle case where param_info is just a character string
+        map_plumber_type_to_json_schema(param_info)
+      } else {
+        infer_type_from_default_value(default_val)
+      },
+      description = if (!is.null(param_info) && is.list(param_info) && !is.null(param_info$desc)) {
+        trimws(param_info$desc)
+      } else if (!is.null(param_info) && is.character(param_info)) {
+        paste("Parameter", arg_name, "of type", param_info)
+      } else {
+        paste("Parameter", arg_name)
       }
+    )
+    
+    # Add default value if available
+    if (!missing(default_val)) {
+      property$default <- convert_default_to_json_type(default_val, property$type)
     }
     
-    properties[[arg_name]] <- list(
-      type = "string",  # Default to string, could be enhanced
-      description = param_desc
-    )
+    properties[[arg_name]] <- property
     
     if (!is_optional) {
       required <- c(required, arg_name)
@@ -263,6 +371,267 @@ create_input_schema <- function(endpoint) {
     required = required
   )
 }
+
+#' Map Plumber parameter types to JSON Schema types
+#' @noRd
+map_plumber_type_to_json_schema <- function(plumber_type) {
+  type_mapping <- list(
+    "string" = "string",
+    "boolean" = "boolean", 
+    "integer" = "integer",
+    "numeric" = "number",
+    "number" = "number",
+    "array" = "array",
+    "object" = "object",
+    "logical" = "boolean",
+    "double" = "number",
+    "character" = "string"
+  )
+  
+  # Handle multiple types or return string as fallback
+  mapped_type <- type_mapping[[plumber_type]]
+  if (is.null(mapped_type)) {
+    # Issue warning for unrecognized types to help with debugging
+    warning("Unrecognized type: ", plumber_type, ". Using type: string", call. = FALSE)
+    return("string")
+  }
+  
+  mapped_type
+}
+
+#' Infer JSON Schema type from default value
+#' @noRd
+infer_type_from_default_value <- function(default_val) {
+  if (missing(default_val)) {
+    return("string")
+  }
+  
+  if (is.logical(default_val)) {
+    return("boolean")
+  } else if (is.integer(default_val)) {
+    return("integer")
+  } else if (is.numeric(default_val)) {
+    return("number")
+  } else {
+    return("string")
+  }
+}
+
+#' Convert default value to appropriate JSON type
+#' @noRd
+convert_default_to_json_type <- function(default_val, json_type) {
+  if (missing(default_val)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    switch(json_type,
+      "boolean" = as.logical(default_val),
+      "integer" = as.integer(default_val),
+      "number" = as.numeric(default_val),
+      "string" = as.character(default_val),
+      default_val
+    )
+  }, error = function(e) {
+    as.character(default_val)
+  })
+}
+
+#' Create output schema by analyzing function source code
+#' @noRd
+create_output_schema <- function(endpoint) {
+  # Get function source
+  func <- endpoint$getFunc()
+  if (is.null(func)) {
+    return(list(
+      type = "object",
+      description = "Function response"
+    ))
+  }
+  
+  # Try to analyze function source for return patterns
+  tryCatch({
+    # Get function body as character
+    func_body <- deparse(body(func))
+    func_text <- paste(func_body, collapse = "\n")
+    
+    # Look for common return patterns
+    schema <- analyze_return_patterns(func_text)
+    
+    # If we can't determine schema from patterns, provide generic response
+    if (is.null(schema)) {
+      schema <- list(
+        type = "object",
+        description = "Response from the API endpoint",
+        properties = structure(list(), names = character(0))
+      )
+    }
+    
+    schema
+  }, error = function(e) {
+    # Fallback to generic schema
+    list(
+      type = "object",
+      description = "Response from the API endpoint"
+    )
+  })
+}
+
+#' Analyze return patterns in function source code
+#' @noRd
+analyze_return_patterns <- function(func_text) {
+  # Look for list() return patterns - first find all list() calls
+  # Need to handle balanced parentheses properly
+  list_start_pattern <- "list\\s*\\("
+  list_starts <- gregexpr(list_start_pattern, func_text, perl = TRUE)[[1]]
+  
+  if (list_starts[1] != -1) {
+    # For each list( found, find the matching closing parenthesis
+    for (start_pos in list_starts) {
+      # Find the complete list() call with balanced parentheses
+      list_content <- extract_balanced_parentheses(func_text, start_pos)
+      
+      if (!is.null(list_content)) {
+        # Parse the list content
+        properties <- parse_list_content(list_content)
+        
+        if (length(properties) > 0) {
+          return(list(
+            type = "object",
+            description = "Structured response object",
+            properties = properties
+          ))
+        }
+      }
+    }
+  }
+  
+  # Fallback to generic object
+  list(
+    type = "object",
+    description = "Response from the API endpoint"
+  )
+}
+
+#' Extract content between balanced parentheses starting from a position
+#' @noRd
+extract_balanced_parentheses <- function(text, start_pos) {
+  # Find the 'list(' part
+  list_match <- regexpr("list\\s*\\(", substr(text, start_pos, nchar(text)), perl = TRUE)
+  if (list_match == -1) return(NULL)
+  
+  # Adjust position to after 'list('
+  paren_start <- start_pos + attr(list_match, "match.length") - 1
+  
+  # Count parentheses to find the matching close
+  paren_count <- 1
+  pos <- paren_start + 1
+  
+  while (pos <= nchar(text) && paren_count > 0) {
+    char <- substr(text, pos, pos)
+    if (char == "(") {
+      paren_count <- paren_count + 1
+    } else if (char == ")") {
+      paren_count <- paren_count - 1
+    }
+    pos <- pos + 1
+  }
+  
+  if (paren_count == 0) {
+    # Extract content between parentheses
+    content <- substr(text, paren_start + 1, pos - 2)
+    return(content)
+  }
+  
+  NULL
+}
+
+#' Parse list content to extract key-value pairs
+#' @noRd
+parse_list_content <- function(content) {
+  properties <- list()
+  
+  # Split by comma, but be careful of nested function calls
+  # Simple approach: split by comma and then look for = 
+  parts <- strsplit(content, ",")[[1]]
+  
+  for (part in parts) {
+    part <- trimws(part)
+    if (nchar(part) == 0) next
+    
+    # Look for key = value pattern
+    if (grepl("\\w+\\s*=", part)) {
+      # Extract key name (everything before first =)
+      eq_pos <- regexpr("=", part)[1]
+      if (eq_pos > 0) {
+        key <- trimws(substr(part, 1, eq_pos - 1))
+        value_part <- trimws(substr(part, eq_pos + 1, nchar(part)))
+        
+        # Clean up key name
+        key <- gsub("[\"'`]", "", key)
+        
+        # Skip invalid keys
+        if (nchar(key) == 0 || !grepl("^[a-zA-Z_][a-zA-Z0-9_]*$", key)) {
+          next
+        }
+        
+        # Infer type from value expression
+        property_type <- infer_type_from_expression(value_part)
+        
+        properties[[key]] <- list(
+          type = property_type,
+          description = paste("Response field:", key)
+        )
+      }
+    }
+  }
+  
+  properties
+}
+
+#' Infer type from R expression patterns
+#' @noRd
+infer_type_from_expression <- function(expr) {
+  expr <- trimws(expr)
+  
+  # Check for numeric functions
+  if (grepl("(mean|sum|median|sd|round|length|as\\.numeric|min|max)", expr)) {
+    return("number")
+  }
+  
+  # Check for string functions
+  if (grepl("(paste|as\\.character|toString)", expr)) {
+    return("string")
+  }
+  
+  # Check for logical functions
+  if (grepl("(as\\.logical|TRUE|FALSE)", expr)) {
+    return("boolean")
+  }
+  
+  # Check for array/list functions
+  if (grepl("(c\\(|list\\(|array)", expr)) {
+    return("array")
+  }
+  
+  # Check if it's a variable name that might represent a parameter
+  if (grepl("^[a-zA-Z_][a-zA-Z0-9_]*$", expr)) {
+    # It's a simple variable name - try to infer from common names
+    if (grepl("(count|length|size|num)", expr, ignore.case = TRUE)) {
+      return("number")
+    }
+    if (grepl("(operation|type|name|message)", expr, ignore.case = TRUE)) {
+      return("string")
+    }
+    if (grepl("(flag|enable|disable|na_rm|include)", expr, ignore.case = TRUE)) {
+      return("boolean")
+    }
+  }
+  
+  # Default to string for unknown expressions
+  "string"
+}
+
 
 #' Handle initialize request
 #' @noRd
@@ -292,11 +661,19 @@ handle_tools_list <- function(body, tools) {
     id = body$id,
     result = list(
       tools = unname(lapply(tools, function(tool) {
-        list(
+        # Create base tool definition
+        tool_def <- list(
           name = tool$name,
           description = tool$description,
           inputSchema = tool$inputSchema
         )
+        
+        # Add output schema if available
+        if (!is.null(tool$outputSchema)) {
+          tool_def$outputSchema <- tool$outputSchema
+        }
+        
+        tool_def
       }))
     )
   )

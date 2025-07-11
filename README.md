@@ -88,6 +88,186 @@ The `pr_mcp()` function automatically:
 3. **Adds MCP endpoints**: Adds the necessary MCP protocol endpoints
 4. **Handles JSON-RPC**: Manages all MCP communication via JSON-RPC
 5. **Supports resources**: Allows AI assistants to read documentation and data from your R environment
+6. **Generates rich schemas**: Creates detailed input/output schemas with documentation from your roxygen comments
+
+## Enhanced Documentation & Schema Generation
+
+plumber2mcp automatically generates rich JSON schemas and detailed documentation for your API endpoints by analyzing your roxygen comments and function signatures. This feature, inspired by FastAPI-MCP, makes your R APIs much more usable by AI assistants.
+
+### Rich Tool Descriptions
+
+When you document your endpoints with roxygen comments, plumber2mcp creates comprehensive tool descriptions:
+
+```r
+#* Calculate statistical operations on numeric data
+#* 
+#* This endpoint performs various statistical calculations on a vector of numbers.
+#* It supports multiple operations and handles missing values.
+#* 
+#* @param numbers Numeric vector of values to calculate statistics for
+#* @param operation Statistical operation to perform: "mean", "median", "sum", "sd" (default: "mean")
+#* @param na_rm:bool Logical value indicating whether to remove NA values (default: TRUE)
+#* @param digits:int Number of decimal places to round the result (default: 2)
+#* @return List containing the calculated result and metadata
+#* @post /calculate
+function(numbers, operation = "mean", na_rm = TRUE, digits = 2) {
+  # Convert input to numeric
+  if (is.character(numbers)) {
+    numbers <- as.numeric(strsplit(numbers, ",")[[1]])
+  } else {
+    numbers <- as.numeric(numbers)
+  }
+  
+  result <- switch(operation,
+    "mean" = mean(numbers, na.rm = na_rm),
+    "median" = median(numbers, na.rm = na_rm),
+    "sum" = sum(numbers, na.rm = na_rm),
+    "sd" = sd(numbers, na.rm = na_rm),
+    stop("Unknown operation: ", operation)
+  )
+  
+  list(
+    result = round(result, digits),
+    operation = operation,
+    count = length(numbers[!is.na(numbers)]),
+    input_length = length(numbers)
+  )
+}
+```
+
+This creates an MCP tool with:
+
+**Enhanced Description:**
+```
+Calculate statistical operations on numeric data
+
+This endpoint performs various statistical calculations on a vector of numbers.
+It supports multiple operations and handles missing values.
+
+Parameters:
+- numbers (string): Numeric vector of values to calculate statistics for
+- operation (string) [default: mean]: Statistical operation to perform: "mean", "median", "sum", "sd"
+- na_rm (boolean) [default: TRUE]: Logical value indicating whether to remove NA values
+- digits (integer) [default: 2]: Number of decimal places to round the result
+
+HTTP Method: POST
+Path: /calculate
+```
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "numbers": {
+      "type": "string",
+      "description": "Numeric vector of values to calculate statistics for"
+    },
+    "operation": {
+      "type": "string",
+      "description": "Statistical operation to perform: \"mean\", \"median\", \"sum\", \"sd\"",
+      "default": "mean"
+    },
+    "na_rm": {
+      "type": "boolean",
+      "description": "Logical value indicating whether to remove NA values",
+      "default": true
+    },
+    "digits": {
+      "type": "integer",
+      "description": "Number of decimal places to round the result",
+      "default": 2
+    }
+  },
+  "required": ["numbers"]
+}
+```
+
+**Output Schema:**
+```json
+{
+  "type": "object",
+  "description": "Structured response object",
+  "properties": {
+    "result": {
+      "type": "number",
+      "description": "Response field: result"
+    },
+    "operation": {
+      "type": "string",
+      "description": "Response field: operation"
+    },
+    "count": {
+      "type": "number",
+      "description": "Response field: count"
+    },
+    "input_length": {
+      "type": "number",
+      "description": "Response field: input_length"
+    }
+  }
+}
+```
+
+### Type Detection and Schema Features
+
+1. **Smart Type Mapping**: Automatically maps R types to JSON Schema types:
+   - `logical` → `boolean`
+   - `integer` → `integer`
+   - `numeric`/`double` → `number`
+   - `character` → `string`
+   - And supports plumber type annotations like `:bool`, `:int`, `:array`
+
+2. **Default Value Detection**: Extracts default values from function signatures and includes them in schemas
+
+3. **Required vs Optional Parameters**: Automatically determines which parameters are required based on whether they have default values
+
+4. **Output Schema Generation**: Analyzes your function's return statements to automatically generate response schemas
+
+5. **Rich Parameter Documentation**: Extracts parameter descriptions from roxygen `@param` tags
+
+### Why This Matters for AI Assistants
+
+With enhanced schemas, AI assistants can:
+
+1. **Better understand your APIs**: Rich descriptions help AI assistants understand what each endpoint does
+2. **Provide better suggestions**: Detailed parameter information helps AI assistants suggest appropriate values
+3. **Generate better code**: Output schemas help AI assistants understand what to expect from your API
+4. **Reduce errors**: Type information and required/optional parameter detection reduces API call mistakes
+5. **Self-document**: Your API becomes self-documenting for both humans and AI
+
+### Example AI Assistant Interaction
+
+Without enhanced schemas:
+```
+User: "Can you help me calculate the mean of some numbers using this API?"
+AI: "I can see there's a calculate endpoint, but I'm not sure what parameters it needs..."
+```
+
+With enhanced schemas:
+```
+User: "Can you help me calculate the mean of some numbers using this API?"
+AI: "I can see you have a calculate endpoint that performs statistical operations! 
+     It needs a 'numbers' parameter (required) and optionally 'operation' (defaults to 'mean'), 
+     'na_rm' (defaults to TRUE), and 'digits' (defaults to 2). 
+     
+     Let me call it for you:
+     POST /calculate with {"numbers": "1,2,3,4,5"}
+     
+     This will return an object with the result, operation used, count of valid numbers, 
+     and input length."
+```
+
+### Best Practices for Documentation
+
+To get the most out of enhanced schema generation:
+
+1. **Use descriptive roxygen comments**: Write clear titles and descriptions
+2. **Document all parameters**: Use `@param` tags with clear descriptions
+3. **Specify types when helpful**: Use `:bool`, `:int`, `:array` annotations for clarity
+4. **Provide meaningful default values**: Default values appear in the schema
+5. **Use consistent return structures**: Return lists with named elements for better output schemas
+6. **Include examples in descriptions**: Help AI assistants understand expected formats
 
 ## MCP Endpoints
 
@@ -102,24 +282,38 @@ Given a simple Plumber API:
 
 ```r
 #* Echo back the input
-#* @param msg The message to echo
+#* 
+#* Simple endpoint that echoes back whatever message you send it
+#* 
+#* @param msg:string The message to echo back (default: "Hello World")
 #* @get /echo
-function(msg = "") {
+function(msg = "Hello World") {
   list(message = paste("Echo:", msg))
 }
 
-#* Add two numbers
-#* @param a First number
-#* @param b Second number
+#* Add two numbers together
+#* 
+#* Performs arithmetic addition on two numeric values
+#* 
+#* @param a:number First number to add
+#* @param b:number Second number to add  
+#* @param precision:int Number of decimal places to round result (default: 2)
 #* @post /add
-function(a, b) {
-  list(result = as.numeric(a) + as.numeric(b))
+function(a, b, precision = 2) {
+  result <- as.numeric(a) + as.numeric(b)
+  list(
+    result = round(result, precision),
+    operation = "addition",
+    inputs = c(a, b)
+  )
 }
 ```
 
-These endpoints become MCP tools:
-- `GET__echo` - Echo back a message
-- `POST__add` - Add two numbers
+These endpoints become rich MCP tools with full schemas:
+- `GET__echo` - Echo back a message with intelligent default handling
+- `POST__add` - Add two numbers with configurable precision and structured output
+
+The enhanced documentation provides AI assistants with detailed information about parameter types, defaults, descriptions, and expected response formats.
 
 ## Resources Support
 
