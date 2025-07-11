@@ -5,3 +5,7 @@
 ^README\.Rmd$
 ^\.gitignore$
 ^inst/examples/.*\.log$
+^CLAUDE\.md$
+^\.git$
+^\.claude$
+^.*\.Rcheck$

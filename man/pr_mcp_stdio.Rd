@@ -9,7 +9,7 @@ pr_mcp_stdio(
   include_endpoints = NULL,
   exclude_endpoints = NULL,
   server_name = "plumber-mcp",
-  server_version = "0.1.0",
+  server_version = "0.2.0",
   debug = FALSE
 )
 }

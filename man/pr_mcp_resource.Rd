@@ -16,7 +16,7 @@ pr_mcp_resource(
 \arguments{
 \item{pr}{A Plumber router object (must have MCP support added)}
 
-\item{uri}{The URI pattern for the resource (e.g., "/help/{topic}")}
+\item{uri}{The URI pattern for the resource (e.g., "/help/topic")}
 
 \item{func}{A function that returns the resource content}
 

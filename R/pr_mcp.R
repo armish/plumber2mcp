@@ -1,5 +1,7 @@
 #' @import plumber
 #' @importFrom jsonlite toJSON
+#' @importFrom utils capture.output sessionInfo installed.packages help
+#' @importFrom tools Rd2txt
 NULL
 
 # Null-coalescing operator for convenience
@@ -371,7 +373,7 @@ handle_tools_call <- function(body, tools, pr) {
 #' you want to make available.
 #'
 #' @param pr A Plumber router object (must have MCP support added)
-#' @param uri The URI pattern for the resource (e.g., "/help/{topic}")
+#' @param uri The URI pattern for the resource (e.g., "/help/topic")
 #' @param func A function that returns the resource content
 #' @param name A human-readable name for the resource
 #' @param description A description of what the resource provides
@@ -500,26 +502,37 @@ create_help_function <- function(topic) {
         return(paste("No help found for topic:", current_topic))
       }
       
-      # Create a temporary file to capture clean text output
-      temp_file <- tempfile(fileext = ".txt")
-      on.exit(unlink(temp_file))
+      # Use capture.output to get help text
+      help_text <- capture.output({
+        # Capture the help output
+        print(help_file)
+      })
       
-      # Get the raw Rd content and convert to plain text file
-      rd_file <- utils:::.getHelpFile(help_file[1])
-      tools::Rd2txt(rd_file, out = temp_file)
-      
-      # Read the clean text from file
-      if (file.exists(temp_file)) {
-        clean_text <- readLines(temp_file, warn = FALSE)
+      # Try to get better formatted help using tools
+      tryCatch({
+        # Create a temporary file to capture clean text output
+        temp_file <- tempfile(fileext = ".txt")
+        on.exit(unlink(temp_file))
         
-        # Clean up any remaining underscore formatting
-        clean_text <- gsub("_([^_])_", "\\1", clean_text)
-        clean_text <- gsub("_", "", clean_text)
+        # Get the raw Rd content and convert to plain text file using internal function
+        rd_file <- get(".getHelpFile", envir = asNamespace("utils"))(help_file[1])
+        tools::Rd2txt(rd_file, out = temp_file)
         
-        return(clean_text)
-      } else {
-        return(paste("Error: Could not generate help text for", current_topic))
-      }
+        # Read the clean text from file
+        if (file.exists(temp_file)) {
+          clean_text <- readLines(temp_file, warn = FALSE)
+          
+          # Clean up any remaining underscore formatting
+          clean_text <- gsub("_([^_])_", "\\1", clean_text)
+          clean_text <- gsub("_", "", clean_text)
+          
+          return(clean_text)
+        } else {
+          return(help_text)
+        }
+      }, error = function(e) {
+        return(help_text)
+      })
     }, error = function(e) {
       # Fallback: try to get basic help information
       tryCatch({
