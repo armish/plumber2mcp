@@ -121,6 +121,8 @@ create_mcp_handler <- function(pr, include_endpoints, exclude_endpoints, server_
         "resources/templates" = handle_resources_templates(body),
         "resources/subscribe" = handle_resources_subscribe(body),
         "resources/unsubscribe" = handle_resources_unsubscribe(body),
+        "prompts/list" = handle_prompts_list(body, pr),
+        "prompts/get" = handle_prompts_get(body, pr),
         {
           list(
             jsonrpc = "2.0",
@@ -643,7 +645,8 @@ handle_initialize <- function(body, server_name, server_version) {
       protocolVersion = "2024-11-05",
       capabilities = list(
         tools = structure(list(), names = character(0)),  # Force empty object, not array
-        resources = structure(list(), names = character(0))  # Force empty object, not array
+        resources = structure(list(), names = character(0)),  # Force empty object, not array
+        prompts = structure(list(), names = character(0))  # Force empty object, not array
       ),
       serverInfo = list(
         name = server_name,
@@ -874,6 +877,124 @@ handle_resources_unsubscribe <- function(body) {
   )
 }
 
+#' Handle prompts/list request
+#' @noRd
+handle_prompts_list <- function(body, pr) {
+  # Extract prompts from router environment
+  prompts <- pr$environment$mcp_prompts %||% list()
+
+  list(
+    jsonrpc = "2.0",
+    id = body$id,
+    result = list(
+      prompts = unname(lapply(prompts, function(prompt) {
+        prompt_def <- list(
+          name = prompt$name,
+          description = prompt$description
+        )
+
+        # Add arguments if defined
+        if (!is.null(prompt$arguments) && length(prompt$arguments) > 0) {
+          prompt_def$arguments = prompt$arguments
+        }
+
+        prompt_def
+      }))
+    )
+  )
+}
+
+#' Handle prompts/get request
+#' @noRd
+handle_prompts_get <- function(body, pr) {
+  prompt_name <- body$params$name
+  prompt_args <- body$params$arguments
+
+  # Extract prompts from router environment
+  prompts <- pr$environment$mcp_prompts %||% list()
+
+  if (!(prompt_name %in% names(prompts))) {
+    return(list(
+      jsonrpc = "2.0",
+      id = body$id,
+      error = list(
+        code = -32602,
+        message = paste("Unknown prompt:", prompt_name)
+      )
+    ))
+  }
+
+  prompt <- prompts[[prompt_name]]
+
+  # Execute the prompt function
+  tryCatch({
+    # Get the function that generates the prompt messages
+    func <- prompt$func
+
+    # Execute the function with arguments
+    func_args <- if (!is.null(prompt_args)) as.list(prompt_args) else list()
+    messages <- do.call(func, func_args)
+
+    # Ensure messages is a list
+    if (!is.list(messages)) {
+      messages <- list(messages)
+    }
+
+    # Validate and normalize message format
+    normalized_messages <- lapply(messages, function(msg) {
+      if (is.character(msg)) {
+        # Simple string - convert to user message
+        list(
+          role = "user",
+          content = list(
+            type = "text",
+            text = msg
+          )
+        )
+      } else if (is.list(msg)) {
+        # Already structured - validate it has role and content
+        if (is.null(msg$role)) {
+          msg$role <- "user"
+        }
+        if (is.null(msg$content)) {
+          # If content is missing, look for text field
+          if (!is.null(msg$text)) {
+            msg$content <- list(type = "text", text = msg$text)
+            msg$text <- NULL
+          } else {
+            stop("Message must have content")
+          }
+        } else if (is.character(msg$content)) {
+          # Content is a string - wrap it
+          msg$content <- list(type = "text", text = msg$content)
+        }
+        msg
+      } else {
+        stop("Invalid message format")
+      }
+    })
+
+    list(
+      jsonrpc = "2.0",
+      id = body$id,
+      result = list(
+        description = prompt$description,
+        messages = normalized_messages
+      )
+    )
+  }, error = function(e) {
+    list(
+      jsonrpc = "2.0",
+      id = body$id,
+      error = list(
+        code = -32603,
+        message = "Internal error",
+        data = as.character(e)
+      )
+    )
+  })
+}
+
 #' Add a resource to an MCP-enabled Plumber router
 #'
 #' Resources allow AI assistants to read content from your R environment,
@@ -1061,4 +1182,168 @@ create_help_function <- function(topic) {
       })
     })
   }
+}
+
+#' Add a prompt template to an MCP-enabled Plumber router
+#'
+#' Prompts are reusable templates that AI assistants can discover and use
+#' to interact with your API. They provide structured messages with optional
+#' arguments that can be filled in by the AI or user.
+#'
+#' @param pr A Plumber router object (must have MCP support added)
+#' @param name Unique identifier for the prompt (e.g., "code-review", "analyze-data")
+#' @param description Human-readable description of what the prompt does
+#' @param arguments Optional list of argument definitions. Each argument should be a list with:
+#'   \itemize{
+#'     \item \code{name}: The argument name
+#'     \item \code{description}: What the argument is for
+#'     \item \code{required}: Boolean indicating if the argument is required (default: FALSE)
+#'   }
+#' @param func A function that generates prompt messages. The function should:
+#'   \itemize{
+#'     \item Accept arguments matching those defined in the arguments parameter
+#'     \item Return either a character vector, a list of messages, or a single message
+#'     \item Each message can be either a string (treated as user message) or a list with \code{role} and \code{content}
+#'   }
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Simple prompt with no arguments
+#' pr %>%
+#'   pr_mcp(transport = "stdio") %>%
+#'   pr_mcp_prompt(
+#'     name = "greeting",
+#'     description = "Generate a friendly greeting",
+#'     func = function() {
+#'       "Hello! How can I help you with R today?"
+#'     }
+#'   )
+#'
+#' # Prompt with arguments
+#' pr %>%
+#'   pr_mcp(transport = "stdio") %>%
+#'   pr_mcp_prompt(
+#'     name = "analyze-dataset",
+#'     description = "Guide for analyzing a dataset",
+#'     arguments = list(
+#'       list(name = "dataset", description = "Name of the dataset to analyze", required = TRUE),
+#'       list(name = "focus", description = "Specific aspect to focus on", required = FALSE)
+#'     ),
+#'     func = function(dataset, focus = "general") {
+#'       if (focus == "general") {
+#'         msg <- sprintf(
+#'           paste(
+#'             "Please analyze the %s dataset. Provide:",
+#'             "1. Summary statistics",
+#'             "2. Data quality assessment",
+#'             "3. Interesting patterns or relationships",
+#'             "4. Recommendations for further analysis",
+#'             sep = "\n"
+#'           ),
+#'           dataset
+#'         )
+#'       } else {
+#'         msg <- sprintf(
+#'           "Please analyze the %s dataset with a focus on: %s",
+#'           dataset, focus
+#'         )
+#'       }
+#'
+#'       # Return as a structured message
+#'       list(
+#'         role = "user",
+#'         content = list(type = "text", text = msg)
+#'       )
+#'     }
+#'   )
+#'
+#' # Multi-turn conversation prompt
+#' pr %>%
+#'   pr_mcp(transport = "stdio") %>%
+#'   pr_mcp_prompt(
+#'     name = "code-review",
+#'     description = "Review R code for quality and best practices",
+#'     arguments = list(
+#'       list(name = "code", description = "The R code to review", required = TRUE)
+#'     ),
+#'     func = function(code) {
+#'       list(
+#'         list(
+#'           role = "user",
+#'           content = list(
+#'             type = "text",
+#'             text = paste("Please review this R code:", code, sep = "\n\n")
+#'           )
+#'         ),
+#'         list(
+#'           role = "assistant",
+#'           content = list(
+#'             type = "text",
+#'             text = "I'll review your R code for:"
+#'           )
+#'         ),
+#'         list(
+#'           role = "user",
+#'           content = list(
+#'             type = "text",
+#'             text = paste(
+#'               "Focus on:",
+#'               "1. Code correctness and logic",
+#'               "2. R idioms and best practices",
+#'               "3. Performance considerations",
+#'               "4. Documentation and readability",
+#'               sep = "\n"
+#'             )
+#'           )
+#'         )
+#'       )
+#'     }
+#'   )
+#' }
+pr_mcp_prompt <- function(pr, name, description, arguments = NULL, func) {
+  validate_pr(pr)
+
+  # Check if this router has MCP support in its environment
+  env <- pr$environment
+  if (is.null(env$mcp_prompts)) {
+    env$mcp_prompts <- list()
+  }
+
+  # Validate arguments structure if provided
+  if (!is.null(arguments)) {
+    if (!is.list(arguments)) {
+      stop("arguments must be a list")
+    }
+
+    # Validate each argument definition
+    for (i in seq_along(arguments)) {
+      arg <- arguments[[i]]
+      if (!is.list(arg)) {
+        stop("Each argument must be a list with 'name', 'description', and optionally 'required'")
+      }
+      if (is.null(arg$name)) {
+        stop("Each argument must have a 'name' field")
+      }
+      if (is.null(arg$description)) {
+        arguments[[i]]$description <- paste("Argument:", arg$name)
+      }
+      if (is.null(arg$required)) {
+        arguments[[i]]$required <- FALSE
+      }
+    }
+  }
+
+  # Create prompt definition
+  prompt <- list(
+    name = name,
+    description = description,
+    arguments = arguments,
+    func = func
+  )
+
+  # Add to router's prompts in its environment
+  env$mcp_prompts[[name]] <- prompt
+
+  invisible(pr)
 }
