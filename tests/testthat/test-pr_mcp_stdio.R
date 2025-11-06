@@ -32,23 +32,23 @@ test_that("process_mcp_request handles basic requests", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    init_request, tools, list(), "test-server", "1.0.0", pr
+    init_request, tools, list(), list(), "test-server", "1.0.0", pr
   )
-  
+
   expect_equal(response$jsonrpc, "2.0")
   expect_equal(response$id, 1)
   expect_equal(response$result$protocolVersion, "2024-11-05")
   expect_equal(response$result$serverInfo$name, "test-server")
-  
+
   # Test tools/list
   list_request <- list(
     jsonrpc = "2.0",
     id = 2,
     method = "tools/list"
   )
-  
+
   response <- plumber2mcp:::process_mcp_request(
-    list_request, tools, list(), "test-server", "1.0.0", pr
+    list_request, tools, list(), list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -88,7 +88,7 @@ test_that("stdio tool calls work correctly", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    call_request, tools, list(), "test-server", "1.0.0", pr
+    call_request, tools, list(), list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -112,13 +112,13 @@ test_that("stdio ping handler works correctly", {
   )
   
   response <- plumber2mcp:::process_mcp_request(
-    ping_request, list(), list(), "test-server", "1.0.0", plumber::pr()
+    ping_request, list(), list(), list(), "test-server", "1.0.0", plumber::pr()
   )
-  
+
   expect_equal(response$jsonrpc, "2.0")
   expect_equal(response$id, 1)
   expect_true("result" %in% names(response))
-  
+
   # Check that result is an object, not array
   json <- jsonlite::toJSON(response$result, auto_unbox = TRUE)
   parsed <- jsonlite::fromJSON(json, simplifyVector = FALSE)
@@ -132,9 +132,9 @@ test_that("stdio notifications/initialized handler works correctly", {
     method = "notifications/initialized",
     params = list()
   )
-  
+
   response <- plumber2mcp:::process_mcp_request(
-    init_request, list(), list(), "test-server", "1.0.0", plumber::pr()
+    init_request, list(), list(), list(), "test-server", "1.0.0", plumber::pr()
   )
   
   # Should return NULL for notifications

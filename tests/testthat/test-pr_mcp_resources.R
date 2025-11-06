@@ -41,7 +41,7 @@ test_that("resources capability is included in server info", {
   resources <- list()
   
   response <- plumber2mcp:::process_mcp_request(
-    init_request, tools, resources, "test-server", "1.0.0", pr
+    init_request, tools, resources, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -63,7 +63,7 @@ test_that("resources/list returns empty list when no resources", {
   resources <- list()
   
   response <- plumber2mcp:::process_mcp_request(
-    list_request, tools, resources, "test-server", "1.0.0", pr
+    list_request, tools, resources, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -94,7 +94,7 @@ test_that("resources/list returns resource information", {
   resources <- pr$environment$mcp_resources
   
   response <- plumber2mcp:::process_mcp_request(
-    list_request, tools, resources, "test-server", "1.0.0", pr
+    list_request, tools, resources, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -131,7 +131,7 @@ test_that("resources/read returns resource content", {
   resources <- pr$environment$mcp_resources
   
   response <- plumber2mcp:::process_mcp_request(
-    read_request, tools, resources, "test-server", "1.0.0", pr
+    read_request, tools, resources, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")
@@ -159,7 +159,7 @@ test_that("resources/read returns error for unknown resource", {
   resources <- list()
   
   response <- plumber2mcp:::process_mcp_request(
-    read_request, tools, resources, "test-server", "1.0.0", pr
+    read_request, tools, resources, list(), "test-server", "1.0.0", pr
   )
   
   expect_equal(response$jsonrpc, "2.0")

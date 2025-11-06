@@ -104,31 +104,47 @@ test_that("validates prompt function is actually a function", {
   pr <- plumber::pr()
   pr <- pr_mcp_http(pr)
 
-  # Trying to add prompt with non-function
-  expect_error(
-    pr_mcp_prompt(pr, "test", "Test", func = "not a function"),
-    class = "error"  # Will error when trying to call it
-  )
+  # Can add prompt with non-function (validation happens at call time)
+  # But calling it should error
+  pr <- pr_mcp_prompt(pr, "test1", "Test", func = "not a function")
+  expect_true("test1" %in% names(pr$environment$mcp_prompts))
 
-  expect_error(
-    pr_mcp_prompt(pr, "test", "Test", func = NULL),
-    class = "error"
+  # Attempting to get this prompt should error
+  response <- plumber2mcp:::handle_prompts_get(
+    list(jsonrpc = "2.0", id = 1, params = list(name = "test1")),
+    pr
   )
+  expect_true("error" %in% names(response))
 
-  expect_error(
-    pr_mcp_prompt(pr, "test", "Test", func = 42),
-    class = "error"
+  # Same for NULL and numeric
+  pr <- pr_mcp_prompt(pr, "test2", "Test", func = NULL)
+  response <- plumber2mcp:::handle_prompts_get(
+    list(jsonrpc = "2.0", id = 2, params = list(name = "test2")),
+    pr
   )
+  expect_true("error" %in% names(response))
+
+  pr <- pr_mcp_prompt(pr, "test3", "Test", func = 42)
+  response <- plumber2mcp:::handle_prompts_get(
+    list(jsonrpc = "2.0", id = 3, params = list(name = "test3")),
+    pr
+  )
+  expect_true("error" %in% names(response))
 })
 
 test_that("validates resource function is actually a function", {
   pr <- plumber::pr()
 
-  # Non-function should cause error when called
-  expect_error(
-    pr_mcp_resource(pr, "/test", func = "not a function", name = "Test"),
-    class = "error"
+  # Can add resource with non-function (validation happens at call time)
+  pr <- pr_mcp_resource(pr, "/test", func = "not a function", name = "Test")
+  expect_true("/test" %in% names(pr$environment$mcp_resources))
+
+  # Attempting to read this resource should error
+  response <- plumber2mcp:::handle_resources_read(
+    list(jsonrpc = "2.0", id = 1, params = list(uri = "/test")),
+    pr
   )
+  expect_true("error" %in% names(response))
 })
 
 test_that("handles function code with potential script injection", {

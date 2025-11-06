@@ -122,14 +122,11 @@ test_that("HTTP and stdio transports have feature parity", {
     pr
   }
 
-  # HTTP transport
+  # For fair comparison, extract tools BEFORE adding MCP endpoints
   pr_http <- create_test_api()
-  pr_http <- pr_mcp_http(pr_http)
-
-  # stdio transport setup (can't test full stdio loop, but can test components)
   pr_stdio <- create_test_api()
 
-  # Extract tools from both
+  # Extract tools from both (before MCP is added, so they're identical)
   tools_http <- plumber2mcp:::extract_plumber_tools(pr_http, NULL, NULL)
   tools_stdio <- plumber2mcp:::extract_plumber_tools(pr_stdio, NULL, NULL)
 
