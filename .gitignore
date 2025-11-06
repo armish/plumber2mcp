@@ -21,3 +21,7 @@ inst/examples/*.log
 *~
 *.swp
 *.swo
+
+# pkgdown
+docs/
+pkgdown/
