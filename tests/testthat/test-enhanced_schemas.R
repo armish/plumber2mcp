@@ -40,14 +40,14 @@ test_that("create_input_schema generates proper JSON schemas", {
   expect_type(schema, "list")
   expect_equal(schema$type, "object")
   expect_type(schema$properties, "list")
-  expect_type(schema$required, "character")
-  
+  expect_type(schema$required, "list")  # Changed to list for n8n compatibility
+
   # Check that parameters are included
   expect_true("name" %in% names(schema$properties))
   expect_true("age" %in% names(schema$properties))
   expect_true("active" %in% names(schema$properties))
-  
-  # Check required parameters
+
+  # Check required parameters (required is now a list)
   expect_true("name" %in% schema$required)
   expect_false("age" %in% schema$required)
   expect_false("active" %in% schema$required)
@@ -129,27 +129,24 @@ test_that("infer_type_from_expression detects types correctly", {
   expect_equal(infer_type_from_expression("unknown_expr"), "string")
 })
 
-test_that("extract_plumber_tools includes output schemas", {
+test_that("extract_plumber_tools includes schemas", {
   # Create test API
   pr <- plumber::pr()
   pr %>% pr_post("/calc", function(x, y = 1) list(result = x + y))
-  
+
   # Extract tools
   tools <- extract_plumber_tools(pr, NULL, NULL)
-  
+
   expect_type(tools, "list")
   expect_true(length(tools) > 0)
-  
+
   # Check first tool
   tool <- tools[[1]]
   expect_true("name" %in% names(tool))
   expect_true("description" %in% names(tool))
   expect_true("inputSchema" %in% names(tool))
-  expect_true("outputSchema" %in% names(tool))
-  
-  # Verify output schema structure
-  expect_equal(tool$outputSchema$type, "object")
-  expect_type(tool$outputSchema$properties, "list")
+  # Note: outputSchema is commented out for n8n compatibility
+  expect_false("outputSchema" %in% names(tool))
 })
 
 test_that("enhanced schemas work with complex roxygen documentation", {
@@ -199,24 +196,18 @@ test_that("enhanced schemas work with complex roxygen documentation", {
   expect_true("precision" %in% names(tool$inputSchema$properties))
   expect_true("validate" %in% names(tool$inputSchema$properties))
   
-  # Check required vs optional parameters
+  # Check required vs optional parameters (required is now a list)
   expect_true("numbers" %in% tool$inputSchema$required)
   expect_true("operation" %in% tool$inputSchema$required)
   expect_false("precision" %in% tool$inputSchema$required)
   expect_false("validate" %in% tool$inputSchema$required)
-  
+
   # Check default values
   expect_equal(tool$inputSchema$properties$precision$default, 2)
   expect_equal(tool$inputSchema$properties$validate$default, TRUE)
-  
-  # Check output schema
-  expect_equal(tool$outputSchema$type, "object")
-  output_props <- names(tool$outputSchema$properties)
-  expect_true("computed_value" %in% output_props)
-  expect_true("operation_used" %in% output_props)
-  expect_true("precision_applied" %in% output_props)
-  expect_true("validation_passed" %in% output_props)
-  expect_true("item_count" %in% output_props)
+
+  # Note: outputSchema is commented out for n8n compatibility
+  # Output schema tests removed
   
   # Clean up
   unlink(temp_file)

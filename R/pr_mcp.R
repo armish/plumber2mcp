@@ -197,7 +197,7 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
           name = endpoint_id,
           description = enhanced_description,
           inputSchema = create_input_schema(endpoint),
-          outputSchema = create_output_schema(endpoint),
+          # outputSchema = create_output_schema(endpoint),  # Commented out for n8n compatibility
           endpoint = endpoint,
           verb = verb
         )
@@ -297,7 +297,7 @@ create_input_schema <- function(endpoint) {
     return(list(
       type = "object",
       properties = structure(list(), names = character(0)),
-      required = character()
+      required = list()  # Changed to list() for n8n compatibility
     ))
   }
   
@@ -366,11 +366,18 @@ create_input_schema <- function(endpoint) {
   if (length(properties) == 0) {
     properties <- structure(list(), names = character(0))
   }
-  
+
+  # Convert required to list for n8n compatibility
+  required_json <- if (length(required) == 0) {
+    list()
+  } else {
+    as.list(required)
+  }
+
   list(
     type = "object",
     properties = properties,
-    required = required
+    required = required_json
   )
 }
 
