@@ -2,11 +2,23 @@
 
 test_that("validates router object strictly", {
   # Various non-router objects
-  expect_error(pr_mcp(NULL, transport = "http"), "Input must be a Plumber router")
-  expect_error(pr_mcp(list(), transport = "http"), "Input must be a Plumber router")
-  expect_error(pr_mcp("string", transport = "http"), "Input must be a Plumber router")
+  expect_error(
+    pr_mcp(NULL, transport = "http"),
+    "Input must be a Plumber router"
+  )
+  expect_error(
+    pr_mcp(list(), transport = "http"),
+    "Input must be a Plumber router"
+  )
+  expect_error(
+    pr_mcp("string", transport = "http"),
+    "Input must be a Plumber router"
+  )
   expect_error(pr_mcp(42, transport = "http"), "Input must be a Plumber router")
-  expect_error(pr_mcp(data.frame(), transport = "http"), "Input must be a Plumber router")
+  expect_error(
+    pr_mcp(data.frame(), transport = "http"),
+    "Input must be a Plumber router"
+  )
 
   # Valid router should not error
   pr <- plumber::pr()
@@ -50,9 +62,12 @@ test_that("handles potentially malicious parameter names", {
   schema <- plumber2mcp:::create_input_schema(endpoint)
 
   # Should handle without errors
-  expect_true("__proto__" %in% names(schema$properties) ||
-              "constructor" %in% names(schema$properties) ||
-              "eval" %in% names(schema$properties))
+  expect_true(
+    "__proto__" %in%
+      names(schema$properties) ||
+      "constructor" %in% names(schema$properties) ||
+      "eval" %in% names(schema$properties)
+  )
 })
 
 test_that("prevents excessively long strings in schemas", {
@@ -296,11 +311,13 @@ test_that("validates JSON-RPC id field types", {
 
   for (id in valid_ids) {
     response <- handler$handle_message(
-      list(body = list(
-        jsonrpc = "2.0",
-        id = id,
-        method = "tools/list"
-      )),
+      list(
+        body = list(
+          jsonrpc = "2.0",
+          id = id,
+          method = "tools/list"
+        )
+      ),
       list()
     )
 
@@ -375,8 +392,28 @@ test_that("handles functions with many parameters", {
   pr <- plumber::pr()
 
   # Function with many parameters
-  many_params <- function(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10,
-                          p11, p12, p13, p14, p15, p16, p17, p18, p19, p20) {
+  many_params <- function(
+    p1,
+    p2,
+    p3,
+    p4,
+    p5,
+    p6,
+    p7,
+    p8,
+    p9,
+    p10,
+    p11,
+    p12,
+    p13,
+    p14,
+    p15,
+    p16,
+    p17,
+    p18,
+    p19,
+    p20
+  ) {
     list(count = 20)
   }
 

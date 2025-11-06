@@ -28,7 +28,9 @@ test_that("handles malformed JSON-RPC requests", {
 
 test_that("handles invalid parameter types in tool calls", {
   pr <- plumber::pr()
-  pr$handle("POST", "/calc", function(x, y) list(result = as.numeric(x) + as.numeric(y)))
+  pr$handle("POST", "/calc", function(x, y) {
+    list(result = as.numeric(x) + as.numeric(y))
+  })
 
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
 
@@ -52,9 +54,13 @@ test_that("handles invalid parameter types in tool calls", {
 
 test_that("handles missing required parameters", {
   pr <- plumber::pr()
-  pr$handle("POST", "/required", function(required_param, optional_param = "default") {
-    list(required = required_param, optional = optional_param)
-  })
+  pr$handle(
+    "POST",
+    "/required",
+    function(required_param, optional_param = "default") {
+      list(required = required_param, optional = optional_param)
+    }
+  )
 
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
 
@@ -204,7 +210,10 @@ test_that("handles special characters in parameters", {
     )
 
     expect_equal(response$jsonrpc, "2.0", info = paste("Failed for:", name))
-    expect_true("result" %in% names(response), info = paste("Failed for:", name))
+    expect_true(
+      "result" %in% names(response),
+      info = paste("Failed for:", name)
+    )
   }
 })
 
@@ -394,21 +403,37 @@ test_that("validates pr_mcp_prompt arguments structure strictly", {
 
   # Invalid arguments - not a list
   expect_error(
-    pr_mcp_prompt(pr, "test", "desc", arguments = "not a list", func = function() "x"),
+    pr_mcp_prompt(
+      pr,
+      "test",
+      "desc",
+      arguments = "not a list",
+      func = function() "x"
+    ),
     "arguments must be a list"
   )
 
   # Invalid argument - not a list element
   expect_error(
-    pr_mcp_prompt(pr, "test", "desc", arguments = list("string"), func = function() "x"),
+    pr_mcp_prompt(
+      pr,
+      "test",
+      "desc",
+      arguments = list("string"),
+      func = function() "x"
+    ),
     "Each argument must be a list"
   )
 
   # Missing name field
   expect_error(
-    pr_mcp_prompt(pr, "test", "desc",
-                  arguments = list(list(description = "No name")),
-                  func = function() "x"),
+    pr_mcp_prompt(
+      pr,
+      "test",
+      "desc",
+      arguments = list(list(description = "No name")),
+      func = function() "x"
+    ),
     "must have a 'name' field"
   )
 })
@@ -495,13 +520,17 @@ test_that("handles concurrent-like scenarios with state", {
 
 test_that("handles empty strings vs NULL vs missing in schemas", {
   pr <- plumber::pr()
-  pr$handle("POST", "/test", function(empty_str = "", null_val = NULL, missing) {
-    list(
-      empty = empty_str,
-      null = null_val,
-      missing = if (missing(missing)) "was missing" else missing
-    )
-  })
+  pr$handle(
+    "POST",
+    "/test",
+    function(empty_str = "", null_val = NULL, missing) {
+      list(
+        empty = empty_str,
+        null = null_val,
+        missing = if (missing(missing)) "was missing" else missing
+      )
+    }
+  )
 
   endpoint <- pr$endpoints[[1]][[1]]
   schema <- plumber2mcp:::create_input_schema(endpoint)

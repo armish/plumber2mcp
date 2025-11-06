@@ -57,7 +57,9 @@ test_that("full MCP server with tools, resources, and prompts works together", {
     list()
   )
 
-  resource_uris <- sapply(resources_response$result$resources, function(r) r$uri)
+  resource_uris <- sapply(resources_response$result$resources, function(r) {
+    r$uri
+  })
   expect_true("/docs/api" %in% resource_uris)
 
   # Test prompts/list
@@ -71,15 +73,17 @@ test_that("full MCP server with tools, resources, and prompts works together", {
 
   # Test actual tool call
   call_response <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 5,
-      method = "tools/call",
-      params = list(
-        name = "POST__process",
-        arguments = list(data = "hello")
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 5,
+        method = "tools/call",
+        params = list(
+          name = "POST__process",
+          arguments = list(data = "hello")
+        )
       )
-    )),
+    ),
     list()
   )
 
@@ -89,29 +93,39 @@ test_that("full MCP server with tools, resources, and prompts works together", {
 
   # Test actual resource read
   read_response <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 6,
-      method = "resources/read",
-      params = list(uri = "/docs/api")
-    )),
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 6,
+        method = "resources/read",
+        params = list(uri = "/docs/api")
+      )
+    ),
     list()
   )
 
-  expect_equal(read_response$result$contents[[1]]$text, "API Documentation here")
+  expect_equal(
+    read_response$result$contents[[1]]$text,
+    "API Documentation here"
+  )
 
   # Test actual prompt get
   prompt_response <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 7,
-      method = "prompts/get",
-      params = list(name = "help")
-    )),
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 7,
+        method = "prompts/get",
+        params = list(name = "help")
+      )
+    ),
     list()
   )
 
-  expect_equal(prompt_response$result$messages[[1]]$content$text, "How can I help?")
+  expect_equal(
+    prompt_response$result$messages[[1]]$content$text,
+    "How can I help?"
+  )
 })
 
 test_that("HTTP and stdio transports have feature parity", {
@@ -147,7 +161,10 @@ test_that("HTTP and stdio transports have feature parity", {
     "1.0"
   )
 
-  expect_equal(http_init$result$protocolVersion, stdio_init$result$protocolVersion)
+  expect_equal(
+    http_init$result$protocolVersion,
+    stdio_init$result$protocolVersion
+  )
   expect_equal(
     names(http_init$result$capabilities),
     names(stdio_init$result$capabilities)
@@ -193,7 +210,13 @@ test_that("chaining pr_mcp functions works correctly", {
   expect_equal(length(pr_complete$environment$mcp_prompts), 2)
 
   # Verify chain didn't break functionality
-  handler <- plumber2mcp:::create_mcp_handler(pr_complete, NULL, NULL, "test", "1.0")
+  handler <- plumber2mcp:::create_mcp_handler(
+    pr_complete,
+    NULL,
+    NULL,
+    "test",
+    "1.0"
+  )
 
   resources_response <- handler$handle_message(
     list(body = list(jsonrpc = "2.0", id = 1, method = "resources/list")),
@@ -213,14 +236,17 @@ test_that("chaining pr_mcp functions works correctly", {
 test_that("tools with roxygen docs integrate with resources and prompts", {
   # Create temp file with well-documented endpoint
   temp_file <- tempfile(fileext = ".R")
-  writeLines(c(
-    "#* Calculate sum of numbers",
-    "#* @param numbers:array Numeric values",
-    "#* @post /sum",
-    "function(numbers) {",
-    "  list(sum = sum(as.numeric(numbers)))",
-    "}"
-  ), temp_file)
+  writeLines(
+    c(
+      "#* Calculate sum of numbers",
+      "#* @param numbers:array Numeric values",
+      "#* @post /sum",
+      "function(numbers) {",
+      "  list(sum = sum(as.numeric(numbers)))",
+      "}"
+    ),
+    temp_file
+  )
 
   pr <- plumber::pr(temp_file)
   pr <- pr_mcp_http(pr)
@@ -245,7 +271,9 @@ test_that("tools with roxygen docs integrate with resources and prompts", {
     pr,
     name = "sum-help",
     description = "Help with sum endpoint",
-    func = function() "The /sum endpoint adds numbers together. Pass an array of numbers."
+    func = function() {
+      "The /sum endpoint adds numbers together. Pass an array of numbers."
+    }
   )
 
   # Extract everything
@@ -257,29 +285,39 @@ test_that("tools with roxygen docs integrate with resources and prompts", {
 
   # Verify resource provides docs
   resource_response <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 1,
-      method = "resources/read",
-      params = list(uri = "/docs/sum")
-    )),
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 1,
+        method = "resources/read",
+        params = list(uri = "/docs/sum")
+      )
+    ),
     list()
   )
 
-  expect_true(grepl("Sum Endpoint", resource_response$result$contents[[1]]$text))
+  expect_true(grepl(
+    "Sum Endpoint",
+    resource_response$result$contents[[1]]$text
+  ))
 
   # Verify prompt provides guidance
   prompt_response <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 2,
-      method = "prompts/get",
-      params = list(name = "sum-help")
-    )),
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 2,
+        method = "prompts/get",
+        params = list(name = "sum-help")
+      )
+    ),
     list()
   )
 
-  expect_true(grepl("/sum endpoint", prompt_response$result$messages[[1]]$content$text))
+  expect_true(grepl(
+    "/sum endpoint",
+    prompt_response$result$messages[[1]]$content$text
+  ))
 
   unlink(temp_file)
 })
@@ -398,7 +436,10 @@ test_that("multiple prompts with same arguments structure", {
     pr
   )
 
-  expect_true(grepl("mtcars", mtcars_response$result$messages[[1]]$content$text))
+  expect_true(grepl(
+    "mtcars",
+    mtcars_response$result$messages[[1]]$content$text
+  ))
   expect_true(grepl("mpg", mtcars_response$result$messages[[1]]$content$text))
 
   iris_response <- plumber2mcp:::handle_prompts_get(
@@ -450,39 +491,48 @@ test_that("dynamic resource content works with tool results", {
 
   # Check initial state
   resource_response1 <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 1,
-      method = "resources/read",
-      params = list(uri = "/last-result")
-    )),
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 1,
+        method = "resources/read",
+        params = list(uri = "/last-result")
+      )
+    ),
     list()
   )
 
-  expect_equal(resource_response1$result$contents[[1]]$text, "No calculations yet")
+  expect_equal(
+    resource_response1$result$contents[[1]]$text,
+    "No calculations yet"
+  )
 
   # Call tool
   handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 2,
-      method = "tools/call",
-      params = list(
-        name = "POST__calc",
-        arguments = list(x = 10, y = 5)
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 2,
+        method = "tools/call",
+        params = list(
+          name = "POST__calc",
+          arguments = list(x = 10, y = 5)
+        )
       )
-    )),
+    ),
     list()
   )
 
   # Check updated state
   resource_response2 <- handler$handle_message(
-    list(body = list(
-      jsonrpc = "2.0",
-      id = 3,
-      method = "resources/read",
-      params = list(uri = "/last-result")
-    )),
+    list(
+      body = list(
+        jsonrpc = "2.0",
+        id = 3,
+        method = "resources/read",
+        params = list(uri = "/last-result")
+      )
+    ),
     list()
   )
 

@@ -173,7 +173,8 @@ pr <- pr %>%
             type = "text",
             text = sprintf(
               "I'm getting this error in R:\n\n%s\n\nHere's the code:\n\n%s",
-              error_message, code_context
+              error_message,
+              code_context
             )
           )
         )

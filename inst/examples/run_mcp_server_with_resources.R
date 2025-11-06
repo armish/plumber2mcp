@@ -26,7 +26,7 @@ pr <- plumb(plumber_file)
 pr <- pr %>%
   # Add built-in R help resources (includes help for common functions)
   pr_mcp_help_resources() %>%
-  
+
   # Add a custom resource with current dataset information
   pr_mcp_resource(
     uri = "/data/mtcars-info",
@@ -43,7 +43,7 @@ pr <- pr %>%
     name = "mtcars Dataset Information",
     description = "Information about the built-in mtcars dataset"
   ) %>%
-  
+
   # Add a resource with R environment information
   pr_mcp_resource(
     uri = "/r/search-path",
@@ -57,7 +57,7 @@ pr <- pr %>%
     name = "R Search Path",
     description = "Current R search path showing attached packages and environments"
   ) %>%
-  
+
   # Add a resource with available datasets
   pr_mcp_resource(
     uri = "/data/available",
@@ -66,7 +66,7 @@ pr <- pr %>%
       if (is.null(datasets)) {
         return("No datasets information available")
       }
-      
+
       # Format dataset information
       paste(
         "Available R Datasets:",
@@ -86,7 +86,7 @@ pr <- pr %>%
 message("Starting MCP stdio server with resources...")
 message("Available resources:")
 message("- R help topics: /help/{topic}")
-message("- R session info: /r/session-info") 
+message("- R session info: /r/session-info")
 message("- Installed packages: /r/packages")
 message("- mtcars info: /data/mtcars-info")
 message("- Search path: /r/search-path")

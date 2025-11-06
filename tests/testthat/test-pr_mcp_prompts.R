@@ -16,7 +16,10 @@ test_that("pr_mcp_prompt adds prompts to router environment", {
   expect_true("mcp_prompts" %in% names(pr$environment))
   expect_true("test-prompt" %in% names(pr$environment$mcp_prompts))
   expect_equal(pr$environment$mcp_prompts[["test-prompt"]]$name, "test-prompt")
-  expect_equal(pr$environment$mcp_prompts[["test-prompt"]]$description, "A test prompt")
+  expect_equal(
+    pr$environment$mcp_prompts[["test-prompt"]]$description,
+    "A test prompt"
+  )
 })
 
 test_that("pr_mcp_prompt validates argument structure", {
@@ -37,26 +40,32 @@ test_that("pr_mcp_prompt validates argument structure", {
   })
 
   # Invalid arguments structure should error
-  expect_error({
-    pr_mcp_prompt(
-      pr,
-      name = "test2",
-      description = "Test",
-      arguments = "not a list",
-      func = function() "test"
-    )
-  }, "arguments must be a list")
+  expect_error(
+    {
+      pr_mcp_prompt(
+        pr,
+        name = "test2",
+        description = "Test",
+        arguments = "not a list",
+        func = function() "test"
+      )
+    },
+    "arguments must be a list"
+  )
 
   # Argument without name should error
-  expect_error({
-    pr_mcp_prompt(
-      pr,
-      name = "test3",
-      description = "Test",
-      arguments = list(list(description = "No name")),
-      func = function() "test"
-    )
-  }, "must have a 'name' field")
+  expect_error(
+    {
+      pr_mcp_prompt(
+        pr,
+        name = "test3",
+        description = "Test",
+        arguments = list(list(description = "No name")),
+        func = function() "test"
+      )
+    },
+    "must have a 'name' field"
+  )
 })
 
 test_that("prompts/list returns all prompts", {

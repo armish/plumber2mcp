@@ -27,48 +27,64 @@ validate_pr <- function(pr) {
 #' @param server_version Version of the MCP server
 #' @param debug Logical, whether to write debug messages (stdio transport only)
 #' @export
-pr_mcp <- function(pr,
-                   transport,
-                   path = "/mcp",
-                   include_endpoints = NULL,
-                   exclude_endpoints = NULL,
-                   server_name = "plumber-mcp",
-                   server_version = "0.3.0",
-                   debug = FALSE) {
-  
+pr_mcp <- function(
+  pr,
+  transport,
+  path = "/mcp",
+  include_endpoints = NULL,
+  exclude_endpoints = NULL,
+  server_name = "plumber-mcp",
+  server_version = "0.3.0",
+  debug = FALSE
+) {
   validate_pr(pr)
-  
+
   # Validate transport parameter
   if (missing(transport)) {
     stop("Transport parameter is required. Choose 'http' or 'stdio'.")
   }
-  
+
   if (transport == "stdio") {
     # Stdio transport blocks and runs the server
-    pr_mcp_stdio(pr, include_endpoints, exclude_endpoints, server_name, server_version, debug)
+    pr_mcp_stdio(
+      pr,
+      include_endpoints,
+      exclude_endpoints,
+      server_name,
+      server_version,
+      debug
+    )
   } else if (transport == "http") {
     # HTTP transport adds endpoints and returns the router
-    pr_mcp_http(pr, path, include_endpoints, exclude_endpoints, server_name, server_version)
+    pr_mcp_http(
+      pr,
+      path,
+      include_endpoints,
+      exclude_endpoints,
+      server_name,
+      server_version
+    )
   } else {
     stop("Unknown transport: '", transport, "'. Must be 'http' or 'stdio'.")
   }
 }
 
 #' Add MCP support via HTTP transport
-#' 
+#'
 #' This is the original pr_mcp implementation that adds HTTP endpoints
-#' 
+#'
 #' @inheritParams pr_mcp
 #' @export
-pr_mcp_http <- function(pr,
-                        path = "/mcp",
-                        include_endpoints = NULL,
-                        exclude_endpoints = NULL,
-                        server_name = "plumber-mcp",
-                        server_version = "0.3.0") {
-  
+pr_mcp_http <- function(
+  pr,
+  path = "/mcp",
+  include_endpoints = NULL,
+  exclude_endpoints = NULL,
+  server_name = "plumber-mcp",
+  server_version = "0.3.0"
+) {
   validate_pr(pr)
-  
+
   # Create MCP handler
   mcp_handler <- create_mcp_handler(
     pr = pr,
@@ -77,27 +93,40 @@ pr_mcp_http <- function(pr,
     server_name = server_name,
     server_version = server_version
   )
-  
+
   # Mount MCP endpoints
   pr %>%
-    pr_post(paste0(path, "/messages"), mcp_handler$handle_message, serializer = serializer_json(auto_unbox = TRUE)) %>%
-    pr_get(path, mcp_handler$server_info, serializer = serializer_json(auto_unbox = TRUE))
-  
+    pr_post(
+      paste0(path, "/messages"),
+      mcp_handler$handle_message,
+      serializer = serializer_json(auto_unbox = TRUE)
+    ) %>%
+    pr_get(
+      path,
+      mcp_handler$server_info,
+      serializer = serializer_json(auto_unbox = TRUE)
+    )
+
   invisible(pr)
 }
 
 #' Create MCP handler for processing JSON-RPC requests
 #' @noRd
-create_mcp_handler <- function(pr, include_endpoints, exclude_endpoints, server_name, server_version) {
-  
+create_mcp_handler <- function(
+  pr,
+  include_endpoints,
+  exclude_endpoints,
+  server_name,
+  server_version
+) {
   # Extract tools from plumber endpoints
   tools <- extract_plumber_tools(pr, include_endpoints, exclude_endpoints)
-  
+
   list(
     # Handle MCP JSON-RPC messages
     handle_message = function(req, res) {
       body <- req$body
-      
+
       if (is.null(body$jsonrpc) || body$jsonrpc != "2.0") {
         res$status <- 400
         return(list(
@@ -109,9 +138,10 @@ create_mcp_handler <- function(pr, include_endpoints, exclude_endpoints, server_
           )
         ))
       }
-      
+
       # Route to appropriate handler based on method
-      result <- switch(body$method,
+      result <- switch(
+        body$method,
         "initialize" = handle_initialize(body, server_name, server_version),
         "ping" = handle_ping(body),
         "tools/list" = handle_tools_list(body, tools),
@@ -134,10 +164,10 @@ create_mcp_handler <- function(pr, include_endpoints, exclude_endpoints, server_
           )
         }
       )
-      
+
       return(result)
     },
-    
+
     # Return server information
     server_info = function() {
       list(
@@ -157,42 +187,46 @@ create_mcp_handler <- function(pr, include_endpoints, exclude_endpoints, server_
 extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
   endpoints <- pr$endpoints
   tools <- list()
-  
-  
+
   # Iterate through all endpoint groups
   for (group_name in names(endpoints)) {
     group <- endpoints[[group_name]]
-    
+
     # Each group contains a list of endpoints
     for (i in seq_along(group)) {
       endpoint <- group[[i]]
-      
+
       # Skip if not a proper endpoint object
       if (!inherits(endpoint, "PlumberEndpoint")) {
         next
       }
-      
+
       # Extract endpoint properties
       path <- endpoint$path
       verbs <- endpoint$verbs
-      
-      
+
       # Create a tool for each verb
       for (verb in verbs) {
         # Create tool ID
         endpoint_id <- paste0(verb, "_", gsub("^/", "", gsub("/", "_", path)))
-        
+
         # Check inclusion/exclusion
-        if (!is.null(include_endpoints) && !(endpoint_id %in% include_endpoints)) {
+        if (
+          !is.null(include_endpoints) && !(endpoint_id %in% include_endpoints)
+        ) {
           next
         }
         if (!is.null(exclude_endpoints) && endpoint_id %in% exclude_endpoints) {
           next
         }
-        
+
         # Create tool definition with enhanced description
-        enhanced_description <- create_enhanced_description(endpoint, verb, path)
-        
+        enhanced_description <- create_enhanced_description(
+          endpoint,
+          verb,
+          path
+        )
+
         tool <- list(
           name = endpoint_id,
           description = enhanced_description,
@@ -201,12 +235,12 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
           endpoint = endpoint,
           verb = verb
         )
-        
+
         tools[[endpoint_id]] <- tool
       }
     }
   }
-  
+
   tools
 }
 
@@ -214,77 +248,109 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
 #' @noRd
 create_enhanced_description <- function(endpoint, verb, path) {
   # Start with the title from comments
-  title <- if (!is.null(endpoint$comments) && 
-            length(endpoint$comments) > 0 && 
-            !is.na(endpoint$comments) &&
-            nchar(trimws(endpoint$comments)) > 0) {
+  title <- if (
+    !is.null(endpoint$comments) &&
+      length(endpoint$comments) > 0 &&
+      !is.na(endpoint$comments) &&
+      nchar(trimws(endpoint$comments)) > 0
+  ) {
     trimws(endpoint$comments)
   } else {
     paste("Endpoint:", verb, path)
   }
-  
+
   # Add the detailed description if available
-  description <- if (!is.null(endpoint$description) && 
-                    length(endpoint$description) > 0 && 
-                    !is.na(endpoint$description) &&
-                    nchar(trimws(endpoint$description)) > 0) {
+  description <- if (
+    !is.null(endpoint$description) &&
+      length(endpoint$description) > 0 &&
+      !is.na(endpoint$description) &&
+      nchar(trimws(endpoint$description)) > 0
+  ) {
     trimws(endpoint$description)
   } else {
     ""
   }
-  
+
   # Build the complete description
   result <- title
-  
+
   if (description != "" && description != title) {
     result <- paste(result, "\n\n", description, sep = "")
   }
-  
+
   # Add parameter information summary
   if (length(endpoint$params) > 0) {
     result <- paste(result, "\n\nParameters:", sep = "")
-    
+
     # Get function formals to match parameter names
     func <- endpoint$getFunc()
     if (!is.null(func)) {
       formals_list <- formals(func)
       param_names <- names(formals_list)
       param_names <- param_names[!param_names %in% c("req", "res", "...")]
-      
+
       for (i in seq_along(endpoint$params)) {
         if (i <= length(param_names)) {
           param_name <- param_names[i]
           param_info <- endpoint$params[[i]]
-          
+
           param_line <- paste("- ", param_name, sep = "")
-          
+
           # Handle param_info safely - could be list or atomic vector
           if (is.list(param_info) && !is.null(param_info$type)) {
-            param_line <- paste(param_line, " (", param_info$type, ")", sep = "")
+            param_line <- paste(
+              param_line,
+              " (",
+              param_info$type,
+              ")",
+              sep = ""
+            )
           } else if (is.character(param_info) && length(param_info) == 1) {
             param_line <- paste(param_line, " (", param_info, ")", sep = "")
           }
-          
+
           # Add default value if parameter is optional
           default_val <- formals_list[[param_name]]
           if (!missing(default_val)) {
-            param_line <- paste(param_line, " [default: ", format(default_val), "]", sep = "")
+            param_line <- paste(
+              param_line,
+              " [default: ",
+              format(default_val),
+              "]",
+              sep = ""
+            )
           }
-          
+
           # Handle description safely
-          if (is.list(param_info) && !is.null(param_info$desc) && nchar(trimws(param_info$desc)) > 0) {
-            param_line <- paste(param_line, ": ", trimws(param_info$desc), sep = "")
+          if (
+            is.list(param_info) &&
+              !is.null(param_info$desc) &&
+              nchar(trimws(param_info$desc)) > 0
+          ) {
+            param_line <- paste(
+              param_line,
+              ": ",
+              trimws(param_info$desc),
+              sep = ""
+            )
           }
-          
+
           result <- paste(result, "\n", param_line, sep = "")
         }
       }
     }
   }
-  
+
   # Add endpoint information
-  result <- paste(result, "\n\nHTTP Method: ", toupper(verb), "\nPath: ", path, sep = "")
-  
+  result <- paste(
+    result,
+    "\n\nHTTP Method: ",
+    toupper(verb),
+    "\nPath: ",
+    path,
+    sep = ""
+  )
+
   result
 }
 
@@ -297,43 +363,48 @@ create_input_schema <- function(endpoint) {
     return(list(
       type = "object",
       properties = structure(list(), names = character(0)),
-      required = list()  # Changed to list() for n8n compatibility
+      required = list() # Changed to list() for n8n compatibility
     ))
   }
-  
+
   formals_list <- formals(func)
   args <- names(formals_list)
-  
+
   properties <- list()
   required <- character()
-  
+
   # Create a lookup for plumber-parsed parameters
   plumber_params <- list()
   if (length(endpoint$params) > 0) {
     param_names <- names(formals_list)
     param_names <- param_names[!param_names %in% c("req", "res", "...")]
-    
+
     for (i in seq_along(endpoint$params)) {
       if (i <= length(param_names)) {
         plumber_params[[param_names[i]]] <- endpoint$params[[i]]
       }
     }
   }
-  
+
   # Extract parameters from function arguments
   for (arg_name in args) {
-    if (arg_name %in% c("req", "res", "...")) next
-    
+    if (arg_name %in% c("req", "res", "...")) {
+      next
+    }
+
     # Check if parameter has a default value (making it optional)
     default_val <- formals_list[[arg_name]]
     is_optional <- !missing(default_val)
-    
+
     # Get parameter info from plumber's parsing
     param_info <- plumber_params[[arg_name]]
-    
+
     # Build property definition
     property <- list(
-      type = if (!is.null(param_info) && (is.list(param_info) && !is.null(param_info$type))) {
+      type = if (
+        !is.null(param_info) &&
+          (is.list(param_info) && !is.null(param_info$type))
+      ) {
         map_plumber_type_to_json_schema(param_info$type)
       } else if (!is.null(param_info) && is.character(param_info)) {
         # Handle case where param_info is just a character string
@@ -341,7 +412,9 @@ create_input_schema <- function(endpoint) {
       } else {
         infer_type_from_default_value(default_val)
       },
-      description = if (!is.null(param_info) && is.list(param_info) && !is.null(param_info$desc)) {
+      description = if (
+        !is.null(param_info) && is.list(param_info) && !is.null(param_info$desc)
+      ) {
         trimws(param_info$desc)
       } else if (!is.null(param_info) && is.character(param_info)) {
         paste("Parameter", arg_name, "of type", param_info)
@@ -349,19 +422,22 @@ create_input_schema <- function(endpoint) {
         paste("Parameter", arg_name)
       }
     )
-    
+
     # Add default value if available
     if (!missing(default_val)) {
-      property$default <- convert_default_to_json_type(default_val, property$type)
+      property$default <- convert_default_to_json_type(
+        default_val,
+        property$type
+      )
     }
-    
+
     properties[[arg_name]] <- property
-    
+
     if (!is_optional) {
       required <- c(required, arg_name)
     }
   }
-  
+
   # Ensure properties is serialized as object, not array when empty
   if (length(properties) == 0) {
     properties <- structure(list(), names = character(0))
@@ -386,7 +462,7 @@ create_input_schema <- function(endpoint) {
 map_plumber_type_to_json_schema <- function(plumber_type) {
   type_mapping <- list(
     "string" = "string",
-    "boolean" = "boolean", 
+    "boolean" = "boolean",
     "integer" = "integer",
     "numeric" = "number",
     "number" = "number",
@@ -396,15 +472,20 @@ map_plumber_type_to_json_schema <- function(plumber_type) {
     "double" = "number",
     "character" = "string"
   )
-  
+
   # Handle multiple types or return string as fallback
   mapped_type <- type_mapping[[plumber_type]]
   if (is.null(mapped_type)) {
     # Issue warning for unrecognized types to help with debugging
-    warning("Unrecognized type: ", plumber_type, ". Using type: string", call. = FALSE)
+    warning(
+      "Unrecognized type: ",
+      plumber_type,
+      ". Using type: string",
+      call. = FALSE
+    )
     return("string")
   }
-  
+
   mapped_type
 }
 
@@ -414,7 +495,7 @@ infer_type_from_default_value <- function(default_val) {
   if (missing(default_val)) {
     return("string")
   }
-  
+
   if (is.logical(default_val)) {
     return("boolean")
   } else if (is.integer(default_val)) {
@@ -432,18 +513,22 @@ convert_default_to_json_type <- function(default_val, json_type) {
   if (missing(default_val)) {
     return(NULL)
   }
-  
-  tryCatch({
-    switch(json_type,
-      "boolean" = as.logical(default_val),
-      "integer" = as.integer(default_val),
-      "number" = as.numeric(default_val),
-      "string" = as.character(default_val),
-      default_val
-    )
-  }, error = function(e) {
-    as.character(default_val)
-  })
+
+  tryCatch(
+    {
+      switch(
+        json_type,
+        "boolean" = as.logical(default_val),
+        "integer" = as.integer(default_val),
+        "number" = as.numeric(default_val),
+        "string" = as.character(default_val),
+        default_val
+      )
+    },
+    error = function(e) {
+      as.character(default_val)
+    }
+  )
 }
 
 #' Create output schema by analyzing function source code
@@ -457,33 +542,36 @@ create_output_schema <- function(endpoint) {
       description = "Function response"
     ))
   }
-  
+
   # Try to analyze function source for return patterns
-  tryCatch({
-    # Get function body as character
-    func_body <- deparse(body(func))
-    func_text <- paste(func_body, collapse = "\n")
-    
-    # Look for common return patterns
-    schema <- analyze_return_patterns(func_text)
-    
-    # If we can't determine schema from patterns, provide generic response
-    if (is.null(schema)) {
-      schema <- list(
+  tryCatch(
+    {
+      # Get function body as character
+      func_body <- deparse(body(func))
+      func_text <- paste(func_body, collapse = "\n")
+
+      # Look for common return patterns
+      schema <- analyze_return_patterns(func_text)
+
+      # If we can't determine schema from patterns, provide generic response
+      if (is.null(schema)) {
+        schema <- list(
+          type = "object",
+          description = "Response from the API endpoint",
+          properties = structure(list(), names = character(0))
+        )
+      }
+
+      schema
+    },
+    error = function(e) {
+      # Fallback to generic schema
+      list(
         type = "object",
-        description = "Response from the API endpoint",
-        properties = structure(list(), names = character(0))
+        description = "Response from the API endpoint"
       )
     }
-    
-    schema
-  }, error = function(e) {
-    # Fallback to generic schema
-    list(
-      type = "object",
-      description = "Response from the API endpoint"
-    )
-  })
+  )
 }
 
 #' Analyze return patterns in function source code
@@ -493,17 +581,17 @@ analyze_return_patterns <- function(func_text) {
   # Need to handle balanced parentheses properly
   list_start_pattern <- "list\\s*\\("
   list_starts <- gregexpr(list_start_pattern, func_text, perl = TRUE)[[1]]
-  
+
   if (list_starts[1] != -1) {
     # For each list( found, find the matching closing parenthesis
     for (start_pos in list_starts) {
       # Find the complete list() call with balanced parentheses
       list_content <- extract_balanced_parentheses(func_text, start_pos)
-      
+
       if (!is.null(list_content)) {
         # Parse the list content
         properties <- parse_list_content(list_content)
-        
+
         if (length(properties) > 0) {
           return(list(
             type = "object",
@@ -514,7 +602,7 @@ analyze_return_patterns <- function(func_text) {
       }
     }
   }
-  
+
   # Fallback to generic object
   list(
     type = "object",
@@ -526,16 +614,22 @@ analyze_return_patterns <- function(func_text) {
 #' @noRd
 extract_balanced_parentheses <- function(text, start_pos) {
   # Find the 'list(' part
-  list_match <- regexpr("list\\s*\\(", substr(text, start_pos, nchar(text)), perl = TRUE)
-  if (list_match == -1) return(NULL)
-  
+  list_match <- regexpr(
+    "list\\s*\\(",
+    substr(text, start_pos, nchar(text)),
+    perl = TRUE
+  )
+  if (list_match == -1) {
+    return(NULL)
+  }
+
   # Adjust position to after 'list('
   paren_start <- start_pos + attr(list_match, "match.length") - 1
-  
+
   # Count parentheses to find the matching close
   paren_count <- 1
   pos <- paren_start + 1
-  
+
   while (pos <= nchar(text) && paren_count > 0) {
     char <- substr(text, pos, pos)
     if (char == "(") {
@@ -545,13 +639,13 @@ extract_balanced_parentheses <- function(text, start_pos) {
     }
     pos <- pos + 1
   }
-  
+
   if (paren_count == 0) {
     # Extract content between parentheses
     content <- substr(text, paren_start + 1, pos - 2)
     return(content)
   }
-  
+
   NULL
 }
 
@@ -559,15 +653,17 @@ extract_balanced_parentheses <- function(text, start_pos) {
 #' @noRd
 parse_list_content <- function(content) {
   properties <- list()
-  
+
   # Split by comma, but be careful of nested function calls
-  # Simple approach: split by comma and then look for = 
+  # Simple approach: split by comma and then look for =
   parts <- strsplit(content, ",")[[1]]
-  
+
   for (part in parts) {
     part <- trimws(part)
-    if (nchar(part) == 0) next
-    
+    if (nchar(part) == 0) {
+      next
+    }
+
     # Look for key = value pattern
     if (grepl("\\w+\\s*=", part)) {
       # Extract key name (everything before first =)
@@ -575,18 +671,18 @@ parse_list_content <- function(content) {
       if (eq_pos > 0) {
         key <- trimws(substr(part, 1, eq_pos - 1))
         value_part <- trimws(substr(part, eq_pos + 1, nchar(part)))
-        
+
         # Clean up key name
         key <- gsub("[\"'`]", "", key)
-        
+
         # Skip invalid keys
         if (nchar(key) == 0 || !grepl("^[a-zA-Z_][a-zA-Z0-9_]*$", key)) {
           next
         }
-        
+
         # Infer type from value expression
         property_type <- infer_type_from_expression(value_part)
-        
+
         properties[[key]] <- list(
           type = property_type,
           description = paste("Response field:", key)
@@ -594,7 +690,7 @@ parse_list_content <- function(content) {
       }
     }
   }
-  
+
   properties
 }
 
@@ -602,27 +698,27 @@ parse_list_content <- function(content) {
 #' @noRd
 infer_type_from_expression <- function(expr) {
   expr <- trimws(expr)
-  
+
   # Check for numeric functions
   if (grepl("(mean|sum|median|sd|round|length|as\\.numeric|min|max)", expr)) {
     return("number")
   }
-  
+
   # Check for string functions
   if (grepl("(paste|as\\.character|toString)", expr)) {
     return("string")
   }
-  
+
   # Check for logical functions
   if (grepl("(as\\.logical|TRUE|FALSE)", expr)) {
     return("boolean")
   }
-  
+
   # Check for array/list functions
   if (grepl("(c\\(|list\\(|array)", expr)) {
     return("array")
   }
-  
+
   # Check if it's a variable name that might represent a parameter
   if (grepl("^[a-zA-Z_][a-zA-Z0-9_]*$", expr)) {
     # It's a simple variable name - try to infer from common names
@@ -632,11 +728,13 @@ infer_type_from_expression <- function(expr) {
     if (grepl("(operation|type|name|message)", expr, ignore.case = TRUE)) {
       return("string")
     }
-    if (grepl("(flag|enable|disable|na_rm|include)", expr, ignore.case = TRUE)) {
+    if (
+      grepl("(flag|enable|disable|na_rm|include)", expr, ignore.case = TRUE)
+    ) {
       return("boolean")
     }
   }
-  
+
   # Default to string for unknown expressions
   "string"
 }
@@ -651,9 +749,9 @@ handle_initialize <- function(body, server_name, server_version) {
     result = list(
       protocolVersion = "2024-11-05",
       capabilities = list(
-        tools = structure(list(), names = character(0)),  # Force empty object, not array
-        resources = structure(list(), names = character(0)),  # Force empty object, not array
-        prompts = structure(list(), names = character(0))  # Force empty object, not array
+        tools = structure(list(), names = character(0)), # Force empty object, not array
+        resources = structure(list(), names = character(0)), # Force empty object, not array
+        prompts = structure(list(), names = character(0)) # Force empty object, not array
       ),
       serverInfo = list(
         name = server_name,
@@ -677,12 +775,12 @@ handle_tools_list <- function(body, tools) {
           description = tool$description,
           inputSchema = tool$inputSchema
         )
-        
+
         # Add output schema if available
         if (!is.null(tool$outputSchema)) {
           tool_def$outputSchema <- tool$outputSchema
         }
-        
+
         tool_def
       }))
     )
@@ -694,7 +792,7 @@ handle_tools_list <- function(body, tools) {
 handle_tools_call <- function(body, tools, pr) {
   tool_name <- body$params$name
   tool_args <- body$params$arguments
-  
+
   if (!(tool_name %in% names(tools))) {
     return(list(
       jsonrpc = "2.0",
@@ -705,59 +803,62 @@ handle_tools_call <- function(body, tools, pr) {
       )
     ))
   }
-  
+
   tool <- tools[[tool_name]]
-  
+
   # Execute the endpoint
-  tryCatch({
-    # Get the endpoint from the tool
-    endpoint <- tool$endpoint
-    
-    # Create arguments list for the function
-    func_args <- list()
-    if (!is.null(tool_args)) {
-      func_args <- as.list(tool_args)
-    }
-    
-    # Get the function
-    func <- endpoint$getFunc()
-    
-    # If the function expects req, create a mock request object
-    if ("req" %in% names(formals(func))) {
-      func_args$req <- list(
-        REQUEST_METHOD = tool$verb,
-        PATH_INFO = endpoint$path,
-        body = tool_args,
-        args = tool_args
-      )
-    }
-    
-    # Execute the function with arguments
-    result <- do.call(func, func_args)
-    
-    list(
-      jsonrpc = "2.0",
-      id = body$id,
-      result = list(
-        content = list(
-          list(
-            type = "text",
-            text = jsonlite::toJSON(result, auto_unbox = TRUE)
+  tryCatch(
+    {
+      # Get the endpoint from the tool
+      endpoint <- tool$endpoint
+
+      # Create arguments list for the function
+      func_args <- list()
+      if (!is.null(tool_args)) {
+        func_args <- as.list(tool_args)
+      }
+
+      # Get the function
+      func <- endpoint$getFunc()
+
+      # If the function expects req, create a mock request object
+      if ("req" %in% names(formals(func))) {
+        func_args$req <- list(
+          REQUEST_METHOD = tool$verb,
+          PATH_INFO = endpoint$path,
+          body = tool_args,
+          args = tool_args
+        )
+      }
+
+      # Execute the function with arguments
+      result <- do.call(func, func_args)
+
+      list(
+        jsonrpc = "2.0",
+        id = body$id,
+        result = list(
+          content = list(
+            list(
+              type = "text",
+              text = jsonlite::toJSON(result, auto_unbox = TRUE)
+            )
           )
         )
       )
-    )
-  }, error = function(e) {
-    list(
-      jsonrpc = "2.0",
-      id = body$id,
-      error = list(
-        code = -32603,
-        message = "Internal error",
-        data = as.character(e)
+    },
+    error = function(e) {
+      list(
+        jsonrpc = "2.0",
+        id = body$id,
+        error = list(
+          code = -32603,
+          message = "Internal error",
+          data = as.character(e)
+        )
       )
-    )
-  })
+    }
+  )
 }
 
 #' Handle ping request for HTTP transport
@@ -766,7 +867,7 @@ handle_ping <- function(body) {
   list(
     jsonrpc = "2.0",
     id = body$id,
-    result = structure(list(), names = character(0))  # Force empty object, not array
+    result = structure(list(), names = character(0)) # Force empty object, not array
   )
 }
 
@@ -775,7 +876,7 @@ handle_ping <- function(body) {
 handle_resources_list <- function(body, pr) {
   # Extract resources from router environment
   resources <- pr$environment$mcp_resources %||% list()
-  
+
   list(
     jsonrpc = "2.0",
     id = body$id,
@@ -796,10 +897,10 @@ handle_resources_list <- function(body, pr) {
 #' @noRd
 handle_resources_read <- function(body, pr) {
   resource_uri <- body$params$uri
-  
+
   # Extract resources from router environment
   resources <- pr$environment$mcp_resources %||% list()
-  
+
   if (!(resource_uri %in% names(resources))) {
     return(list(
       jsonrpc = "2.0",
@@ -810,46 +911,49 @@ handle_resources_read <- function(body, pr) {
       )
     ))
   }
-  
+
   resource <- resources[[resource_uri]]
-  
+
   # Execute the resource function
-  tryCatch({
-    # Get the function that generates the resource content
-    func <- resource$func
-    
-    # Execute the function to get content
-    content <- func()
-    
-    # Convert content to string if needed
-    if (!is.character(content)) {
-      content <- as.character(content)
-    }
-    
-    list(
-      jsonrpc = "2.0",
-      id = body$id,
-      result = list(
-        contents = list(
-          list(
-            uri = resource_uri,
-            mimeType = resource$mimeType %||% "text/plain",
-            text = paste(content, collapse = "\n")
+  tryCatch(
+    {
+      # Get the function that generates the resource content
+      func <- resource$func
+
+      # Execute the function to get content
+      content <- func()
+
+      # Convert content to string if needed
+      if (!is.character(content)) {
+        content <- as.character(content)
+      }
+
+      list(
+        jsonrpc = "2.0",
+        id = body$id,
+        result = list(
+          contents = list(
+            list(
+              uri = resource_uri,
+              mimeType = resource$mimeType %||% "text/plain",
+              text = paste(content, collapse = "\n")
+            )
           )
         )
       )
-    )
-  }, error = function(e) {
-    list(
-      jsonrpc = "2.0",
-      id = body$id,
-      error = list(
-        code = -32603,
-        message = "Internal error",
-        data = as.character(e)
+    },
+    error = function(e) {
+      list(
+        jsonrpc = "2.0",
+        id = body$id,
+        error = list(
+          code = -32603,
+          message = "Internal error",
+          data = as.character(e)
+        )
       )
-    )
-  })
+    }
+  )
 }
 
 #' Handle resources/templates request for HTTP transport
@@ -859,7 +963,7 @@ handle_resources_templates <- function(body) {
     jsonrpc = "2.0",
     id = body$id,
     result = list(
-      resourceTemplates = list()  # Empty array - no dynamic templates supported yet
+      resourceTemplates = list() # Empty array - no dynamic templates supported yet
     )
   )
 }
@@ -870,7 +974,7 @@ handle_resources_subscribe <- function(body) {
   list(
     jsonrpc = "2.0",
     id = body$id,
-    result = structure(list(), names = character(0))  # Empty object - subscriptions not supported
+    result = structure(list(), names = character(0)) # Empty object - subscriptions not supported
   )
 }
 
@@ -880,7 +984,7 @@ handle_resources_unsubscribe <- function(body) {
   list(
     jsonrpc = "2.0",
     id = body$id,
-    result = structure(list(), names = character(0))  # Empty object - subscriptions not supported
+    result = structure(list(), names = character(0)) # Empty object - subscriptions not supported
   )
 }
 
@@ -934,72 +1038,75 @@ handle_prompts_get <- function(body, pr) {
   prompt <- prompts[[prompt_name]]
 
   # Execute the prompt function
-  tryCatch({
-    # Get the function that generates the prompt messages
-    func <- prompt$func
+  tryCatch(
+    {
+      # Get the function that generates the prompt messages
+      func <- prompt$func
 
-    # Execute the function with arguments
-    func_args <- if (!is.null(prompt_args)) as.list(prompt_args) else list()
-    messages <- do.call(func, func_args)
+      # Execute the function with arguments
+      func_args <- if (!is.null(prompt_args)) as.list(prompt_args) else list()
+      messages <- do.call(func, func_args)
 
-    # Ensure messages is a list
-    if (!is.list(messages)) {
-      messages <- list(messages)
-    }
-
-    # Validate and normalize message format
-    normalized_messages <- lapply(messages, function(msg) {
-      if (is.character(msg)) {
-        # Simple string - convert to user message
-        list(
-          role = "user",
-          content = list(
-            type = "text",
-            text = msg
-          )
-        )
-      } else if (is.list(msg)) {
-        # Already structured - validate it has role and content
-        if (is.null(msg$role)) {
-          msg$role <- "user"
-        }
-        if (is.null(msg$content)) {
-          # If content is missing, look for text field
-          if (!is.null(msg$text)) {
-            msg$content <- list(type = "text", text = msg$text)
-            msg$text <- NULL
-          } else {
-            stop("Message must have content")
-          }
-        } else if (is.character(msg$content)) {
-          # Content is a string - wrap it
-          msg$content <- list(type = "text", text = msg$content)
-        }
-        msg
-      } else {
-        stop("Invalid message format")
+      # Ensure messages is a list
+      if (!is.list(messages)) {
+        messages <- list(messages)
       }
-    })
 
-    list(
-      jsonrpc = "2.0",
-      id = body$id,
-      result = list(
-        description = prompt$description,
-        messages = normalized_messages
+      # Validate and normalize message format
+      normalized_messages <- lapply(messages, function(msg) {
+        if (is.character(msg)) {
+          # Simple string - convert to user message
+          list(
+            role = "user",
+            content = list(
+              type = "text",
+              text = msg
+            )
+          )
+        } else if (is.list(msg)) {
+          # Already structured - validate it has role and content
+          if (is.null(msg$role)) {
+            msg$role <- "user"
+          }
+          if (is.null(msg$content)) {
+            # If content is missing, look for text field
+            if (!is.null(msg$text)) {
+              msg$content <- list(type = "text", text = msg$text)
+              msg$text <- NULL
+            } else {
+              stop("Message must have content")
+            }
+          } else if (is.character(msg$content)) {
+            # Content is a string - wrap it
+            msg$content <- list(type = "text", text = msg$content)
+          }
+          msg
+        } else {
+          stop("Invalid message format")
+        }
+      })
+
+      list(
+        jsonrpc = "2.0",
+        id = body$id,
+        result = list(
+          description = prompt$description,
+          messages = normalized_messages
+        )
       )
-    )
-  }, error = function(e) {
-    list(
-      jsonrpc = "2.0",
-      id = body$id,
-      error = list(
-        code = -32603,
-        message = "Internal error",
-        data = as.character(e)
+    },
+    error = function(e) {
+      list(
+        jsonrpc = "2.0",
+        id = body$id,
+        error = list(
+          code = -32603,
+          message = "Internal error",
+          data = as.character(e)
+        )
       )
-    )
-  })
+    }
+  )
 }
 
 #' Add a resource to an MCP-enabled Plumber router
@@ -1019,7 +1126,7 @@ handle_prompts_get <- function(body, pr) {
 #' @examples
 #' \dontrun{
 #' # Add a resource for R help topics
-#' pr %>% 
+#' pr %>%
 #'   pr_mcp(transport = "stdio") %>%
 #'   pr_mcp_resource(
 #'     uri = "/help/mean",
@@ -1028,15 +1135,22 @@ handle_prompts_get <- function(body, pr) {
 #'     description = "Documentation for the mean() function"
 #'   )
 #' }
-pr_mcp_resource <- function(pr, uri, func, name, description = NULL, mimeType = "text/plain") {
+pr_mcp_resource <- function(
+  pr,
+  uri,
+  func,
+  name,
+  description = NULL,
+  mimeType = "text/plain"
+) {
   validate_pr(pr)
-  
+
   # Check if this router has MCP support in its environment
   env <- pr$environment
   if (is.null(env$mcp_resources)) {
     env$mcp_resources <- list()
   }
-  
+
   # Create resource definition
   resource <- list(
     uri = uri,
@@ -1045,10 +1159,10 @@ pr_mcp_resource <- function(pr, uri, func, name, description = NULL, mimeType = 
     mimeType = mimeType,
     func = func
   )
-  
+
   # Add to router's resources in its environment
   env$mcp_resources[[uri]] <- resource
-  
+
   invisible(pr)
 }
 
@@ -1063,18 +1177,27 @@ pr_mcp_resource <- function(pr, uri, func, name, description = NULL, mimeType = 
 #'
 #' @examples
 #' \dontrun{
-#' pr %>% 
+#' pr %>%
 #'   pr_mcp(transport = "stdio") %>%
 #'   pr_mcp_help_resources()
 #' }
 pr_mcp_help_resources <- function(pr, topics = NULL) {
   validate_pr(pr)
-  
+
   # Default topics if none specified
   if (is.null(topics)) {
-    topics <- c("mean", "lm", "plot", "data.frame", "summary", "str", "head", "tail")
+    topics <- c(
+      "mean",
+      "lm",
+      "plot",
+      "data.frame",
+      "summary",
+      "str",
+      "head",
+      "tail"
+    )
   }
-  
+
   # Add resources for each help topic
   for (topic in topics) {
     pr <- pr_mcp_resource(
@@ -1086,7 +1209,7 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
       mimeType = "text/plain"
     )
   }
-  
+
   # Add a general R session info resource
   pr <- pr_mcp_resource(
     pr = pr,
@@ -1096,7 +1219,7 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
     description = "Current R session information including version and loaded packages",
     mimeType = "text/plain"
   )
-  
+
   # Add a resource for installed packages
   pr <- pr_mcp_resource(
     pr = pr,
@@ -1109,7 +1232,7 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
       if ("Title" %in% available_cols) {
         desired_cols <- c(desired_cols, "Title")
       }
-      
+
       pkg_info <- pkgs[, desired_cols, drop = FALSE]
       capture.output(print(as.data.frame(pkg_info), row.names = FALSE))
     },
@@ -1117,7 +1240,7 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
     description = "List of installed R packages with versions and descriptions",
     mimeType = "text/plain"
   )
-  
+
   invisible(pr)
 }
 
@@ -1126,68 +1249,88 @@ pr_mcp_help_resources <- function(pr, topics = NULL) {
 create_help_function <- function(topic) {
   # Force evaluation of topic to create proper closure
   force(topic)
-  
+
   function() {
     # Use the captured topic value
     current_topic <- topic
-    
-    tryCatch({
-      # Get help content
-      help_file <- utils::help(current_topic, try.all.packages = TRUE)
-      if (length(help_file) == 0) {
-        return(paste("No help found for topic:", current_topic))
+
+    tryCatch(
+      {
+        # Get help content
+        help_file <- utils::help(current_topic, try.all.packages = TRUE)
+        if (length(help_file) == 0) {
+          return(paste("No help found for topic:", current_topic))
+        }
+
+        # Use capture.output to get help text
+        help_text <- capture.output({
+          # Capture the help output
+          print(help_file)
+        })
+
+        # Try to get better formatted help using tools
+        tryCatch(
+          {
+            # Create a temporary file to capture clean text output
+            temp_file <- tempfile(fileext = ".txt")
+            on.exit(unlink(temp_file))
+
+            # Get the raw Rd content and convert to plain text file using internal function
+            rd_file <- get(
+              ".getHelpFile",
+              envir = asNamespace("utils")
+            )(help_file[1])
+            tools::Rd2txt(rd_file, out = temp_file)
+
+            # Read the clean text from file
+            if (file.exists(temp_file)) {
+              clean_text <- readLines(temp_file, warn = FALSE)
+
+              # Clean up any remaining underscore formatting
+              clean_text <- gsub("_([^_])_", "\\1", clean_text)
+              clean_text <- gsub("_", "", clean_text)
+
+              return(clean_text)
+            } else {
+              return(help_text)
+            }
+          },
+          error = function(e) {
+            return(help_text)
+          }
+        )
+      },
+      error = function(e) {
+        # Fallback: try to get basic help information
+        tryCatch(
+          {
+            # Simple approach - just get function signature and description
+            func_obj <- get(current_topic, envir = globalenv())
+            if (is.function(func_obj)) {
+              paste(
+                paste("Function:", current_topic),
+                paste("Usage:", paste(deparse(args(func_obj)), collapse = " ")),
+                "Use help() in R console for full documentation.",
+                sep = "\n"
+              )
+            } else {
+              paste(
+                "Topic:",
+                current_topic,
+                "- Use help() in R console for documentation."
+              )
+            }
+          },
+          error = function(e2) {
+            paste(
+              "Help topic:",
+              current_topic,
+              "- Use help() in R console for documentation."
+            )
+          }
+        )
       }
-      
-      # Use capture.output to get help text
-      help_text <- capture.output({
-        # Capture the help output
-        print(help_file)
-      })
-      
-      # Try to get better formatted help using tools
-      tryCatch({
-        # Create a temporary file to capture clean text output
-        temp_file <- tempfile(fileext = ".txt")
-        on.exit(unlink(temp_file))
-        
-        # Get the raw Rd content and convert to plain text file using internal function
-        rd_file <- get(".getHelpFile", envir = asNamespace("utils"))(help_file[1])
-        tools::Rd2txt(rd_file, out = temp_file)
-        
-        # Read the clean text from file
-        if (file.exists(temp_file)) {
-          clean_text <- readLines(temp_file, warn = FALSE)
-          
-          # Clean up any remaining underscore formatting
-          clean_text <- gsub("_([^_])_", "\\1", clean_text)
-          clean_text <- gsub("_", "", clean_text)
-          
-          return(clean_text)
-        } else {
-          return(help_text)
-        }
-      }, error = function(e) {
-        return(help_text)
-      })
-    }, error = function(e) {
-      # Fallback: try to get basic help information
-      tryCatch({
-        # Simple approach - just get function signature and description
-        func_obj <- get(current_topic, envir = globalenv())
-        if (is.function(func_obj)) {
-          paste(
-            paste("Function:", current_topic),
-            paste("Usage:", paste(deparse(args(func_obj)), collapse = " ")),
-            "Use help() in R console for full documentation.",
-            sep = "\n"
-          )
-        } else {
-          paste("Topic:", current_topic, "- Use help() in R console for documentation.")
-        }
-      }, error = function(e2) {
-        paste("Help topic:", current_topic, "- Use help() in R console for documentation.")
-      })
-    })
+    )
   }
 }
 
@@ -1327,7 +1470,9 @@ pr_mcp_prompt <- function(pr, name, description, arguments = NULL, func) {
     for (i in seq_along(arguments)) {
       arg <- arguments[[i]]
       if (!is.list(arg)) {
-        stop("Each argument must be a list with 'name', 'description', and optionally 'required'")
+        stop(
+          "Each argument must be a list with 'name', 'description', and optionally 'required'"
+        )
       }
       if (is.null(arg$name)) {
         stop("Each argument must have a 'name' field")

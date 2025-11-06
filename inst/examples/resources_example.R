@@ -26,7 +26,7 @@ pr %>%
 
 # Add various types of resources
 pr <- pr %>%
-  
+
   # 1. Dataset summaries
   pr_mcp_resource(
     uri = "/data/mtcars-overview",
@@ -40,7 +40,7 @@ pr <- pr %>%
         "",
         "Variable descriptions:",
         "- mpg:  Miles/(US) gallon",
-        "- cyl:  Number of cylinders", 
+        "- cyl:  Number of cylinders",
         "- disp: Displacement (cu.in.)",
         "- hp:   Gross horsepower",
         "- drat: Rear axle ratio",
@@ -59,7 +59,7 @@ pr <- pr %>%
     name = "mtcars Dataset Overview",
     description = "Complete overview of the Motor Trend car dataset with variable descriptions"
   ) %>%
-  
+
   # 2. Current R environment information
   pr_mcp_resource(
     uri = "/env/loaded-packages",
@@ -75,7 +75,11 @@ pr <- pr %>%
         "",
         "Attached packages:",
         if (!is.null(attached)) {
-          paste(names(attached), sapply(attached, function(p) p$Version), sep = " ")
+          paste(
+            names(attached),
+            sapply(attached, function(p) p$Version),
+            sep = " "
+          )
         } else {
           "No additional packages attached"
         },
@@ -85,7 +89,7 @@ pr <- pr %>%
     name = "Loaded Packages",
     description = "List of currently loaded R packages and namespaces"
   ) %>%
-  
+
   # 3. Statistical analysis results
   pr_mcp_resource(
     uri = "/analysis/correlation-matrix",
@@ -93,7 +97,7 @@ pr <- pr %>%
       # Select numeric columns from mtcars
       numeric_cols <- mtcars[, sapply(mtcars, is.numeric)]
       cor_matrix <- cor(numeric_cols)
-      
+
       paste(
         "Correlation Matrix for mtcars Dataset",
         paste(rep("=", 40), collapse = ""),
@@ -105,19 +109,25 @@ pr <- pr %>%
         "Interpretation:",
         "- Values range from -1 to 1",
         "- Positive values indicate positive correlation",
-        "- Negative values indicate negative correlation", 
+        "- Negative values indicate negative correlation",
         "- Values close to 0 indicate weak correlation",
         "",
         "Strongest correlations (|r| > 0.8):",
         capture.output({
-          high_cor <- which(abs(cor_matrix) > 0.8 & cor_matrix != 1, arr.ind = TRUE)
+          high_cor <- which(
+            abs(cor_matrix) > 0.8 & cor_matrix != 1,
+            arr.ind = TRUE
+          )
           if (nrow(high_cor) > 0) {
             for (i in 1:nrow(high_cor)) {
-              if (high_cor[i, 1] < high_cor[i, 2]) {  # Avoid duplicates
-                cat(sprintf("- %s vs %s: %.3f\n", 
+              if (high_cor[i, 1] < high_cor[i, 2]) {
+                # Avoid duplicates
+                cat(sprintf(
+                  "- %s vs %s: %.3f\n",
                   rownames(cor_matrix)[high_cor[i, 1]],
                   colnames(cor_matrix)[high_cor[i, 2]],
-                  cor_matrix[high_cor[i, 1], high_cor[i, 2]]))
+                  cor_matrix[high_cor[i, 1], high_cor[i, 2]]
+                ))
               }
             }
           } else {
@@ -130,14 +140,14 @@ pr <- pr %>%
     name = "mtcars Correlation Analysis",
     description = "Correlation matrix and interpretation for mtcars dataset"
   ) %>%
-  
+
   # 4. Custom data transformations
   pr_mcp_resource(
     uri = "/data/cars-by-transmission",
     func = function() {
       auto_cars <- subset(mtcars, am == 0)
       manual_cars <- subset(mtcars, am == 1)
-      
+
       paste(
         "Cars Grouped by Transmission Type",
         paste(rep("=", 35), collapse = ""),
@@ -160,7 +170,7 @@ pr <- pr %>%
     name = "Cars by Transmission Type",
     description = "Breakdown of cars in mtcars dataset by transmission type"
   ) %>%
-  
+
   # 5. Add built-in R help resources
   pr_mcp_help_resources(topics = c("lm", "glm", "summary", "plot", "ggplot2"))
 
