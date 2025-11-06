@@ -1,0 +1,77 @@
+url: https://armish.github.io/plumber2mcp/
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  bslib:
+    primary: "#0054AD"
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+
+home:
+  title: "plumber2mcp • Add MCP Support to Plumber APIs"
+  description: >
+    Transform your Plumber APIs into AI-accessible tools using the
+    Model Context Protocol (MCP)
+
+navbar:
+  structure:
+    left: [intro, reference, articles, tutorials, news]
+    right: [search, github]
+  components:
+    home: ~
+    intro:
+      text: Get Started
+      href: articles/getting-started.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    articles:
+      text: Articles
+      menu:
+      - text: Getting Started
+        href: articles/getting-started.html
+    news:
+      text: News
+      href: news/index.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/armish/plumber2mcp
+      aria-label: GitHub
+
+reference:
+  - title: "Main Functions"
+    desc: "Core functions for adding MCP support to Plumber APIs"
+    contents:
+      - pr_mcp
+      - pr_mcp_http
+      - pr_mcp_stdio
+
+  - title: "Resources"
+    desc: "Functions for adding MCP resources to expose R content"
+    contents:
+      - pr_mcp_resource
+      - pr_mcp_help_resources
+
+  - title: "Prompts"
+    desc: "Functions for adding MCP prompts to guide AI interactions"
+    contents:
+      - starts_with("pr_mcp_prompt")
+
+articles:
+  - title: "Getting Started"
+    navbar: ~
+    contents:
+      - getting-started
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with
+  components:
+    built_with: >
+      Built with <a href="https://pkgdown.r-lib.org/">pkgdown</a>
+      and the <a href="https://modelcontextprotocol.io/">Model Context Protocol</a>
+
+authors:
+  Bulent Arman Aksoy:
+    href: https://github.com/armish
