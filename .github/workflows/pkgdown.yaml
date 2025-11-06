@@ -1,8 +1,26 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+#
+# This workflow automatically builds and deploys the pkgdown website to GitHub Pages.
+#
+# Triggers:
+#   - Push to main/master: Builds and deploys to gh-pages branch
+#   - Pull requests: Builds only (no deployment, for testing)
+#   - Releases: Builds and deploys
+#   - Manual dispatch: Can be triggered manually from Actions tab
+#
+# The gh-pages branch will be automatically created on the first successful deployment.
 on:
   push:
     branches: [main, master]
+    paths:
+      - 'R/**'
+      - 'man/**'
+      - 'vignettes/**'
+      - '_pkgdown.yml'
+      - 'DESCRIPTION'
+      - 'README.md'
+      - '.github/workflows/pkgdown.yaml'
   pull_request:
     branches: [main, master]
   release:
@@ -40,6 +58,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Deploy to GitHub pages 🚀
+        # Only deploy on push to main/master or releases (not on PRs)
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
