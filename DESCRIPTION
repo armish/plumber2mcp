@@ -6,9 +6,10 @@ Maintainer: Bulent Arman Aksoy <arman@aksoy.org>
 Authors@R: 
     person("Bulent Arman", "Aksoy", , "arman@aksoy.org", role = c("aut", "cre"))
 Description: Extends plumber APIs with Model Context Protocol (MCP) support,
-    enabling AI assistants to discover and call your API endpoints as tools.
+    enabling AI assistants to discover and call your API endpoints as tools,
+    read resources for context, and use prompt templates for guided interactions.
     Simply add pr_mcp() to your plumber pipeline to automatically expose all
-    endpoints via the MCP protocol.
+    endpoints via the MCP protocol with rich schema generation and documentation.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

@@ -9,7 +9,11 @@ Add Model Context Protocol (MCP) support to your Plumber APIs with a single func
 
 ## What is MCP?
 
-The Model Context Protocol (MCP) is a standard protocol that enables AI assistants (like Claude, ChatGPT, etc.) to interact with external tools and services. By adding MCP support to your Plumber API, you make your R functions available as tools that AI assistants can call directly.
+The Model Context Protocol (MCP) is a standard protocol that enables AI assistants (like Claude, ChatGPT, etc.) to interact with external tools and services. By adding MCP support to your Plumber API, you make your R functions available as:
+
+- **Tools**: AI assistants can call your API endpoints directly
+- **Resources**: AI assistants can read documentation, data, and analysis results
+- **Prompts**: AI assistants can use pre-defined templates to guide interactions
 
 ## Installation
 
@@ -86,7 +90,8 @@ The `pr_mcp()` function automatically:
 3. **Adds MCP endpoints**: Adds the necessary MCP protocol endpoints
 4. **Handles JSON-RPC**: Manages all MCP communication via JSON-RPC
 5. **Supports resources**: Allows AI assistants to read documentation and data from your R environment
-6. **Generates rich schemas**: Creates detailed input/output schemas with documentation from your roxygen comments
+6. **Supports prompts**: Exposes reusable prompt templates that guide AI interactions
+7. **Generates rich schemas**: Creates detailed input/output schemas with documentation from your roxygen comments
 
 ## Enhanced Documentation & Schema Generation
 
@@ -312,6 +317,231 @@ These endpoints become rich MCP tools with full schemas:
 - `POST__add` - Add two numbers with configurable precision and structured output
 
 The enhanced documentation provides AI assistants with detailed information about parameter types, defaults, descriptions, and expected response formats.
+
+## Prompts Support
+
+Prompts are reusable templates that AI assistants can discover and use to interact with your API. They provide structured guidance for common tasks and workflows.
+
+### What are Prompts?
+
+Prompts in MCP are pre-defined message templates that:
+- Help AI assistants understand how to use your API effectively
+- Provide structured guidance for complex workflows
+- Can accept arguments to customize the prompt content
+- Support multi-turn conversations
+
+### Adding Prompts
+
+```r
+# Simple prompt with no arguments
+pr %>%
+  pr_mcp(transport = "stdio") %>%
+  pr_mcp_prompt(
+    name = "r-help",
+    description = "Get help with R programming",
+    func = function() {
+      paste(
+        "I need help with R programming.",
+        "Please provide guidance on best practices and common patterns.",
+        sep = "\n"
+      )
+    }
+  )
+
+# Prompt with arguments
+pr %>%
+  pr_mcp(transport = "stdio") %>%
+  pr_mcp_prompt(
+    name = "analyze-dataset",
+    description = "Generate a comprehensive analysis plan for an R dataset",
+    arguments = list(
+      list(
+        name = "dataset",
+        description = "Name of the R dataset to analyze",
+        required = TRUE
+      ),
+      list(
+        name = "focus",
+        description = "Specific aspect to focus on",
+        required = FALSE
+      )
+    ),
+    func = function(dataset, focus = "general") {
+      sprintf(
+        paste(
+          "Please analyze the %s dataset in R.",
+          "Focus: %s",
+          "",
+          "Provide:",
+          "1. Summary statistics",
+          "2. Data quality assessment",
+          "3. Key insights",
+          sep = "\n"
+        ),
+        dataset, focus
+      )
+    }
+  )
+
+# Multi-turn conversation prompt
+pr %>%
+  pr_mcp(transport = "stdio") %>%
+  pr_mcp_prompt(
+    name = "code-review",
+    description = "Review R code for quality and best practices",
+    arguments = list(
+      list(name = "code", description = "The R code to review", required = TRUE)
+    ),
+    func = function(code) {
+      list(
+        list(
+          role = "user",
+          content = list(
+            type = "text",
+            text = paste("Please review this R code:", code, sep = "\n\n")
+          )
+        ),
+        list(
+          role = "assistant",
+          content = list(
+            type = "text",
+            text = "I'll review your code for correctness, performance, and style."
+          )
+        ),
+        list(
+          role = "user",
+          content = list(
+            type = "text",
+            text = "Please provide specific suggestions for improvement."
+          )
+        )
+      )
+    }
+  )
+```
+
+### Prompt Message Formats
+
+Your prompt function can return messages in several formats:
+
+1. **Simple String** - Automatically converted to a user message:
+```r
+func = function() "Hello World"
+```
+
+2. **Structured Message** - Full control over role and content:
+```r
+func = function() {
+  list(
+    role = "user",
+    content = list(type = "text", text = "Your message")
+  )
+}
+```
+
+3. **Multiple Messages** - For multi-turn conversations:
+```r
+func = function() {
+  list(
+    list(role = "user", content = list(type = "text", text = "First message")),
+    list(role = "assistant", content = list(type = "text", text = "Second message"))
+  )
+}
+```
+
+### Use Cases for Prompts
+
+**Workflow Guidance**
+```r
+pr_mcp_prompt(
+  pr,
+  name = "data-pipeline",
+  description = "Guide for building data processing pipelines",
+  arguments = list(
+    list(name = "data_type", description = "Type of data to process", required = TRUE)
+  ),
+  func = function(data_type) {
+    sprintf("Create a data processing pipeline for %s data...", data_type)
+  }
+)
+```
+
+**Code Generation Templates**
+```r
+pr_mcp_prompt(
+  pr,
+  name = "create-endpoint",
+  description = "Template for creating new Plumber endpoints",
+  func = function() {
+    paste(
+      "Generate a Plumber endpoint with:",
+      "1. Proper roxygen documentation",
+      "2. Input validation",
+      "3. Error handling",
+      "4. Example usage",
+      sep = "\n"
+    )
+  }
+)
+```
+
+**Domain-Specific Assistance**
+```r
+pr_mcp_prompt(
+  pr,
+  name = "statistical-test",
+  description = "Choose and implement appropriate statistical tests",
+  arguments = list(
+    list(name = "research_question", description = "Research question", required = TRUE)
+  ),
+  func = function(research_question) {
+    sprintf(
+      paste(
+        "Research Question: %s",
+        "",
+        "Help me:",
+        "1. Choose the appropriate statistical test",
+        "2. Check assumptions",
+        "3. Implement in R",
+        "4. Interpret results",
+        sep = "\n"
+      ),
+      research_question
+    )
+  }
+)
+```
+
+### Example: Complete Setup with Prompts
+
+```r
+library(plumber)
+library(plumber2mcp)
+
+pr("api.R") %>%
+  pr_mcp(transport = "stdio") %>%
+
+  # Add analysis prompt
+  pr_mcp_prompt(
+    name = "analyze",
+    description = "Analyze data from the API",
+    func = function() {
+      "Guide me through analyzing the data available from this API."
+    }
+  ) %>%
+
+  # Add troubleshooting prompt
+  pr_mcp_prompt(
+    name = "troubleshoot",
+    description = "Help troubleshoot API issues",
+    arguments = list(
+      list(name = "issue", description = "Description of the issue", required = TRUE)
+    ),
+    func = function(issue) {
+      sprintf("I'm experiencing this issue with the API: %s\n\nHow can I resolve it?", issue)
+    }
+  )
+```
 
 ## Resources Support
 
