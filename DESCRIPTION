@@ -11,6 +11,8 @@ Description: Extends plumber APIs with Model Context Protocol (MCP) support,
     Simply add pr_mcp() to your plumber pipeline to automatically expose all
     endpoints via the MCP protocol with rich schema generation and documentation.
 License: MIT + file LICENSE
+URL: https://github.com/armish/plumber2mcp
+BugReports: https://github.com/armish/plumber2mcp/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
