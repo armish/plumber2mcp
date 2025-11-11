@@ -17,7 +17,7 @@ can read to better understand R functions and packages.
 }
 \examples{
 \dontrun{
-pr \%>\% 
+pr \%>\%
   pr_mcp(transport = "stdio") \%>\%
   pr_mcp_help_resources()
 }

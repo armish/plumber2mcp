@@ -36,7 +36,7 @@ test_that("full MCP server with tools, resources, and prompts works together", {
     list()
   )
 
-  expect_equal(init_response$result$protocolVersion, "2024-11-05")
+  expect_equal(init_response$result$protocolVersion, "2025-06-18")
   expect_true("tools" %in% names(init_response$result$capabilities))
   expect_true("resources" %in% names(init_response$result$capabilities))
   expect_true("prompts" %in% names(init_response$result$capabilities))

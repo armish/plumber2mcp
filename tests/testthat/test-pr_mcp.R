@@ -96,7 +96,7 @@ test_that("pr_mcp accepts custom server info", {
 
   expect_equal(info$name, "test-server")
   expect_equal(info$version, "2.0.0")
-  expect_equal(info$protocol_version, "2024-11-05")
+  expect_equal(info$protocol_version, "2025-06-18")
 })
 
 test_that("extract_plumber_tools extracts endpoints correctly", {
@@ -183,7 +183,7 @@ test_that("handle_initialize returns correct response", {
 
   expect_equal(response$jsonrpc, "2.0")
   expect_equal(response$id, 1)
-  expect_equal(response$result$protocolVersion, "2024-11-05")
+  expect_equal(response$result$protocolVersion, "2025-06-18")
   expect_equal(response$result$serverInfo$name, "test-server")
   expect_equal(response$result$serverInfo$version, "1.0.0")
 })
@@ -326,7 +326,7 @@ test_that("Integration: Full MCP workflow works", {
   )
   res <- list()
   init_response <- handler$handle_message(req, res)
-  expect_equal(init_response$result$protocolVersion, "2024-11-05")
+  expect_equal(init_response$result$protocolVersion, "2025-06-18")
 
   # Test tools/list
   req <- list(

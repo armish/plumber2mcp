@@ -145,8 +145,8 @@ test_that("extract_plumber_tools includes schemas", {
   expect_true("name" %in% names(tool))
   expect_true("description" %in% names(tool))
   expect_true("inputSchema" %in% names(tool))
-  # Note: outputSchema is commented out for n8n compatibility
-  expect_false("outputSchema" %in% names(tool))
+  # outputSchema is now standard in 2025-06-18 spec
+  expect_true("outputSchema" %in% names(tool))
 })
 
 test_that("enhanced schemas work with complex roxygen documentation", {

@@ -34,7 +34,7 @@ you want to make available.
 \examples{
 \dontrun{
 # Add a resource for R help topics
-pr \%>\% 
+pr \%>\%
   pr_mcp(transport = "stdio") \%>\%
   pr_mcp_resource(
     uri = "/help/mean",
