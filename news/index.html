@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">plumber2mcp</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,13 +38,57 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="plumber2mcp-040">plumber2mcp 0.4.0<a class="anchor" aria-label="anchor" href="#plumber2mcp-040"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-4-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-4-0"></a></h3>
+<ul><li>
+<strong>Protocol Version Update</strong>: Upgraded from MCP protocol version 2024-11-05 to 2025-06-18
+<ul><li>This is a breaking change for clients still using the old protocol version</li>
+<li>Clients must support protocol version 2025-06-18 to communicate with this version</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-4-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-4-0"></a></h3>
+<div class="section level4">
+<h4 id="mcp-protocol-support-0-4-0">MCP Protocol 2025-06-18 Support<a class="anchor" aria-label="anchor" href="#mcp-protocol-support-0-4-0"></a></h4>
+<ul><li>
+<strong>HTTP Header Support</strong>: Added MCP-Protocol-Version header for HTTP transport (required by new spec)</li>
+<li>
+<strong>Structured Tool Output</strong>: Re-enabled outputSchema support for tools (now standard feature in 2025-06-18)</li>
+<li>
+<strong>Tool Titles</strong>: Added optional title fields to tools for human-friendly display names
+<ul><li>Automatically extracted from roxygen comments or generated from method and path</li>
+</ul></li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="improvements-0-4-0">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-4-0"></a></h3>
+<ul><li>Better protocol negotiation during initialization</li>
+<li>Enhanced tool definitions with both machine-readable names and human-friendly titles</li>
+<li>Output schemas now provide AI assistants with structured format expectations</li>
+<li>All 393 tests passing with new protocol version</li>
+</ul></div>
+<div class="section level3">
+<h3 id="technical-details-0-4-0">Technical Details<a class="anchor" aria-label="anchor" href="#technical-details-0-4-0"></a></h3>
+<ul><li>Updated all protocol version strings throughout codebase</li>
+<li>Modified HTTP handler to set and read MCP-Protocol-Version header</li>
+<li>Updated both HTTP and stdio transports to include new fields</li>
+<li>Enhanced handle_tools_list to include title and outputSchema when available</li>
+<li>Package documentation updated to reflect new protocol version</li>
+</ul></div>
+<div class="section level3">
+<h3 id="migration-guide-0-4-0">Migration Guide<a class="anchor" aria-label="anchor" href="#migration-guide-0-4-0"></a></h3>
+<p>For users upgrading from 0.3.0: * No code changes required - the package handles the new protocol automatically * MCP clients must support protocol version 2025-06-18 * Tools now include optional title and outputSchema fields * HTTP responses include MCP-Protocol-Version header</p>
+</div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="plumber2mcp-030">plumber2mcp 0.3.0<a class="anchor" aria-label="anchor" href="#plumber2mcp-030"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-3-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-3-0"></a></h3>
 <div class="section level4">
 <h4 id="prompts-support-0-3-0">Prompts Support<a class="anchor" aria-label="anchor" href="#prompts-support-0-3-0"></a></h4>
 <ul><li>Added full MCP Prompts support allowing you to define reusable prompt templates that AI assistants can discover and use</li>
-<li>New <code>pr_mcp_prompt()</code> function to register prompt templates with your MCP server</li>
+<li>New <code><a href="../reference/pr_mcp_prompt.html">pr_mcp_prompt()</a></code> function to register prompt templates with your MCP server</li>
 <li>Prompts support optional arguments with required/optional parameters</li>
 <li>Prompts can return simple strings, structured messages, or multi-turn conversations</li>
 <li>Both HTTP and stdio transports fully support prompts</li>

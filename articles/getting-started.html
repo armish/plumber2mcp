@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">plumber2mcp</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -297,7 +297,7 @@ interacting with your API.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://www.rplumber.io/reference/pr.html" class="external-link">pr</a></span><span class="op">(</span><span class="st">"api.R"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/pr_mcp.html">pr_mcp</a></span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"stdio"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu">pr_mcp_prompt</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/pr_mcp_prompt.html">pr_mcp_prompt</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"r-help"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Get help with R programming"</span>,</span>
 <span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
@@ -315,7 +315,7 @@ interacting with your API.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://www.rplumber.io/reference/pr.html" class="external-link">pr</a></span><span class="op">(</span><span class="st">"api.R"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/pr_mcp.html">pr_mcp</a></span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"stdio"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu">pr_mcp_prompt</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/pr_mcp_prompt.html">pr_mcp_prompt</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"analyze-dataset"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Generate analysis plan for a dataset"</span>,</span>
 <span>    arguments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -353,7 +353,7 @@ interacting with your API.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://www.rplumber.io/reference/pr.html" class="external-link">pr</a></span><span class="op">(</span><span class="st">"api.R"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/pr_mcp.html">pr_mcp</a></span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"stdio"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu">pr_mcp_prompt</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/pr_mcp_prompt.html">pr_mcp_prompt</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"code-review"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Review R code for quality"</span>,</span>
 <span>    arguments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -494,7 +494,7 @@ interacting with your API.</p>
 <span>  <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span></span>
 <span>  <span class="co"># Add analysis prompt</span></span>
-<span>  <span class="fu">pr_mcp_prompt</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/pr_mcp_prompt.html">pr_mcp_prompt</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"statistical-analysis"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Guide for statistical analysis workflow"</span>,</span>
 <span>    arguments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -604,7 +604,7 @@ interacting with your API.</p>
 <p>Guide AI through complex multi-step processes:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pr</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu">pr_mcp_prompt</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/pr_mcp_prompt.html">pr_mcp_prompt</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"full-analysis"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Complete data analysis workflow"</span>,</span>
 <span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
