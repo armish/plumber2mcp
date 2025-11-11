@@ -48,7 +48,7 @@ test_that("process_mcp_request handles basic requests", {
 
   expect_equal(response$jsonrpc, "2.0")
   expect_equal(response$id, 1)
-  expect_equal(response$result$protocolVersion, "2024-11-05")
+  expect_equal(response$result$protocolVersion, "2025-06-18")
   expect_equal(response$result$serverInfo$name, "test-server")
 
   # Test tools/list

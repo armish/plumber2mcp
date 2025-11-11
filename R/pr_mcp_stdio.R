@@ -246,7 +246,7 @@ handle_initialize_stdio <- function(body, server_name, server_version) {
     jsonrpc = "2.0",
     id = body$id,
     result = list(
-      protocolVersion = "2024-11-05",
+      protocolVersion = "2025-06-18",
       capabilities = list(
         tools = structure(list(), names = character(0)), # Force empty object, not array
         resources = structure(list(), names = character(0)), # Force empty object, not array
@@ -286,11 +286,24 @@ handle_tools_list_stdio <- function(body, tools) {
     id = body$id,
     result = list(
       tools = unname(lapply(tools, function(tool) {
-        list(
+        # Create base tool definition
+        tool_def <- list(
           name = tool$name,
           description = tool$description,
           inputSchema = tool$inputSchema
         )
+
+        # Add optional title field (new in 2025-06-18)
+        if (!is.null(tool$title)) {
+          tool_def$title <- tool$title
+        }
+
+        # Add output schema if available
+        if (!is.null(tool$outputSchema)) {
+          tool_def$outputSchema <- tool$outputSchema
+        }
+
+        tool_def
       }))
     )
   )

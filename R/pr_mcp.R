@@ -139,6 +139,13 @@ create_mcp_handler <- function(
         ))
       }
 
+      # Check for MCP-Protocol-Version header (required for HTTP transport in 2025-06-18)
+      # Set response header if res has setHeader method (real Plumber response)
+      if (!is.null(res) && is.function(res$setHeader)) {
+        protocol_header <- req$HTTP_MCP_PROTOCOL_VERSION
+        res$setHeader("MCP-Protocol-Version", "2025-06-18")
+      }
+
       # Route to appropriate handler based on method
       result <- switch(
         body$method,
@@ -173,7 +180,7 @@ create_mcp_handler <- function(
       list(
         name = server_name,
         version = server_version,
-        protocol_version = "2024-11-05",
+        protocol_version = "2025-06-18",
         capabilities = list(
           tools = list()
         )
@@ -227,11 +234,24 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
           path
         )
 
+        # Extract title from endpoint comments (human-friendly name)
+        title <- if (
+          !is.null(endpoint$comments) &&
+            length(endpoint$comments) > 0 &&
+            !is.na(endpoint$comments) &&
+            nchar(trimws(endpoint$comments)) > 0
+        ) {
+          trimws(endpoint$comments)
+        } else {
+          paste(toupper(verb), path)
+        }
+
         tool <- list(
           name = endpoint_id,
+          title = title, # Human-friendly display name (new in 2025-06-18)
           description = enhanced_description,
           inputSchema = create_input_schema(endpoint),
-          # outputSchema = create_output_schema(endpoint),  # Commented out for n8n compatibility
+          outputSchema = create_output_schema(endpoint), # Now standard in 2025-06-18 spec
           endpoint = endpoint,
           verb = verb
         )
@@ -747,7 +767,7 @@ handle_initialize <- function(body, server_name, server_version) {
     jsonrpc = "2.0",
     id = body$id,
     result = list(
-      protocolVersion = "2024-11-05",
+      protocolVersion = "2025-06-18",
       capabilities = list(
         tools = structure(list(), names = character(0)), # Force empty object, not array
         resources = structure(list(), names = character(0)), # Force empty object, not array
@@ -775,6 +795,11 @@ handle_tools_list <- function(body, tools) {
           description = tool$description,
           inputSchema = tool$inputSchema
         )
+
+        # Add optional title field (new in 2025-06-18)
+        if (!is.null(tool$title)) {
+          tool_def$title <- tool$title
+        }
 
         # Add output schema if available
         if (!is.null(tool$outputSchema)) {

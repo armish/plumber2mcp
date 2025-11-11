@@ -383,9 +383,9 @@ test_that("handles extremely nested function calls safely", {
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
   expect_true(length(tools) > 0)
 
-  # Note: outputSchema is commented out for n8n compatibility
+  # outputSchema is now standard in 2025-06-18 spec
   tool <- tools[[1]]
-  expect_false("outputSchema" %in% names(tool))
+  expect_true("outputSchema" %in% names(tool))
 })
 
 test_that("handles functions with many parameters", {
@@ -441,7 +441,7 @@ test_that("prevents stack overflow in schema generation", {
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
   expect_true(length(tools) > 0)
 
-  # Note: outputSchema is commented out for n8n compatibility
+  # outputSchema is now standard in 2025-06-18 spec
   tool <- tools[[1]]
-  expect_false("outputSchema" %in% names(tool))
+  expect_true("outputSchema" %in% names(tool))
 })

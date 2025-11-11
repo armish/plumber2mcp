@@ -1,3 +1,42 @@
+# plumber2mcp 0.4.0
+
+## Breaking Changes
+
+* **Protocol Version Update**: Upgraded from MCP protocol version 2024-11-05 to 2025-06-18
+  - This is a breaking change for clients still using the old protocol version
+  - Clients must support protocol version 2025-06-18 to communicate with this version
+
+## New Features
+
+### MCP Protocol 2025-06-18 Support
+* **HTTP Header Support**: Added MCP-Protocol-Version header for HTTP transport (required by new spec)
+* **Structured Tool Output**: Re-enabled outputSchema support for tools (now standard feature in 2025-06-18)
+* **Tool Titles**: Added optional title fields to tools for human-friendly display names
+  - Automatically extracted from roxygen comments or generated from method and path
+
+## Improvements
+
+* Better protocol negotiation during initialization
+* Enhanced tool definitions with both machine-readable names and human-friendly titles
+* Output schemas now provide AI assistants with structured format expectations
+* All 393 tests passing with new protocol version
+
+## Technical Details
+
+* Updated all protocol version strings throughout codebase
+* Modified HTTP handler to set and read MCP-Protocol-Version header
+* Updated both HTTP and stdio transports to include new fields
+* Enhanced handle_tools_list to include title and outputSchema when available
+* Package documentation updated to reflect new protocol version
+
+## Migration Guide
+
+For users upgrading from 0.3.0:
+* No code changes required - the package handles the new protocol automatically
+* MCP clients must support protocol version 2025-06-18
+* Tools now include optional title and outputSchema fields
+* HTTP responses include MCP-Protocol-Version header
+
 # plumber2mcp 0.3.0
 
 ## New Features

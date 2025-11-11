@@ -3,6 +3,7 @@
 export(pr_mcp)
 export(pr_mcp_help_resources)
 export(pr_mcp_http)
+export(pr_mcp_prompt)
 export(pr_mcp_resource)
 export(pr_mcp_stdio)
 import(plumber)

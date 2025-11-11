@@ -87,7 +87,7 @@
 #' @section MCP Protocol:
 #'
 #' This package implements the Model Context Protocol (MCP) specification version
-#' 2024-11-05. It provides:
+#' 2025-06-18. It provides:
 #'
 #' \itemize{
 #'   \item \strong{Automatic endpoint discovery}: Scans your Plumber API and converts endpoints to MCP tools
