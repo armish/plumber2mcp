@@ -48,6 +48,18 @@
 </ul></li>
 </ul></div>
 <div class="section level3">
+<h3 id="critical-bug-fixes-0-4-0">Critical Bug Fixes<a class="anchor" aria-label="anchor" href="#critical-bug-fixes-0-4-0"></a></h3>
+<ul><li>
+<strong>Fixed default parameter value serialization</strong> (#issue-tbd)
+<ul><li>Default values using <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>, <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>, and other R expressions are now correctly evaluated</li>
+<li>Previously, <code>c("a", "b")</code> was serialized as <code>["c", "a", "b"]</code> (incorrect)</li>
+<li>Now correctly serialized as <code>["a", "b"]</code> (correct)</li>
+<li>This fixes Claude Desktop compatibility issues where tools were disabled due to invalid schemas</li>
+<li>Added comprehensive test suite (22 new tests) for default value handling</li>
+<li>Fixes validation errors: “malformed default” in MCP schema validators</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
 <h3 id="new-features-0-4-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-4-0"></a></h3>
 <div class="section level4">
 <h4 id="mcp-protocol-support-0-4-0">MCP Protocol 2025-06-18 Support<a class="anchor" aria-label="anchor" href="#mcp-protocol-support-0-4-0"></a></h4>
