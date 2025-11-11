@@ -1,12 +1,16 @@
 test_that("default values with c() are correctly evaluated", {
   # Create a plumber router with a function that has c() defaults
   pr <- plumber::pr()
-  pr$handle("POST", "/normalize", function(
-    symbols,
-    return_fields = c("symbol", "name", "hgnc_id")
-  ) {
-    list(symbols = symbols, fields = return_fields)
-  })
+  pr$handle(
+    "POST",
+    "/normalize",
+    function(
+      symbols,
+      return_fields = c("symbol", "name", "hgnc_id")
+    ) {
+      list(symbols = symbols, fields = return_fields)
+    }
+  )
 
   # Extract tools
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
@@ -47,11 +51,15 @@ test_that("default values with c() are correctly evaluated", {
 
 test_that("default values with empty vectors are handled correctly", {
   pr <- plumber::pr()
-  pr$handle("GET", "/test", function(
-    items = character(0)
-  ) {
-    list(items = items)
-  })
+  pr$handle(
+    "GET",
+    "/test",
+    function(
+      items = character(0)
+    ) {
+      list(items = items)
+    }
+  )
 
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
   test_tool <- tools[["GET__test"]]
@@ -73,11 +81,15 @@ test_that("default values with empty vectors are handled correctly", {
 
 test_that("default values with list() are correctly evaluated", {
   pr <- plumber::pr()
-  pr$handle("POST", "/config", function(
-    options = list(verbose = TRUE, timeout = 30)
-  ) {
-    list(options = options)
-  })
+  pr$handle(
+    "POST",
+    "/config",
+    function(
+      options = list(verbose = TRUE, timeout = 30)
+    ) {
+      list(options = options)
+    }
+  )
 
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
   config_tool <- tools[["POST__config"]]
@@ -97,13 +109,17 @@ test_that("default values with list() are correctly evaluated", {
 
 test_that("simple default values still work correctly", {
   pr <- plumber::pr()
-  pr$handle("GET", "/greet", function(
-    name = "World",
-    count = 1L,
-    excited = FALSE
-  ) {
-    list(name = name, count = count, excited = excited)
-  })
+  pr$handle(
+    "GET",
+    "/greet",
+    function(
+      name = "World",
+      count = 1L,
+      excited = FALSE
+    ) {
+      list(name = name, count = count, excited = excited)
+    }
+  )
 
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
   greet_tool <- tools[["GET__greet"]]
@@ -122,11 +138,15 @@ test_that("simple default values still work correctly", {
 
 test_that("NULL defaults are handled correctly", {
   pr <- plumber::pr()
-  pr$handle("POST", "/optional", function(
-    data = NULL
-  ) {
-    list(data = data)
-  })
+  pr$handle(
+    "POST",
+    "/optional",
+    function(
+      data = NULL
+    ) {
+      list(data = data)
+    }
+  )
 
   tools <- plumber2mcp:::extract_plumber_tools(pr, NULL, NULL)
   optional_tool <- tools[["POST__optional"]]

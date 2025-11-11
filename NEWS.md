@@ -16,6 +16,16 @@
   - Added comprehensive test suite (22 new tests) for default value handling
   - Fixes validation errors: "malformed default" in MCP schema validators
 
+* **Fixed description field being array instead of string** (#issue-tbd)
+  - When endpoints had multiple documentation sources (plumber + roxygen), description was an array
+  - Previously: `{"description": ["First doc", "Second doc"]}` (incorrect - violates MCP spec)
+  - Now: `{"description": "First doc"}` (correct - single string as required by MCP spec)
+  - Prioritizes plumber-specific documentation (#* comments) over roxygen docs (#' comments)
+  - Filters out NA values and empty strings before processing
+  - This fixes Claude Desktop showing servers as disabled/grayed out
+  - Added comprehensive test suite (17 new tests) for description handling
+  - Ensures strict MCP schema compliance
+
 ## New Features
 
 ### MCP Protocol 2025-06-18 Support
