@@ -268,33 +268,52 @@ extract_plumber_tools <- function(pr, include_endpoints, exclude_endpoints) {
 #' @noRd
 create_enhanced_description <- function(endpoint, verb, path) {
   # Start with the title from comments
+  # IMPORTANT: endpoint$comments can be a vector with multiple elements
+  # We need to collapse it to a single string
   title <- if (
     !is.null(endpoint$comments) &&
-      length(endpoint$comments) > 0 &&
-      !is.na(endpoint$comments) &&
-      nchar(trimws(endpoint$comments)) > 0
+      length(endpoint$comments) > 0
   ) {
-    trimws(endpoint$comments)
+    # Filter out NAs, trim, and remove empty strings
+    comments_clean <- endpoint$comments[!is.na(endpoint$comments)]
+    comments_trimmed <- trimws(comments_clean)
+    comments_nonempty <- comments_trimmed[nchar(comments_trimmed) > 0]
+
+    if (length(comments_nonempty) > 0) {
+      # Prioritize first element (plumber-specific documentation)
+      comments_nonempty[1]
+    } else {
+      paste("Endpoint:", verb, path)
+    }
   } else {
     paste("Endpoint:", verb, path)
   }
 
   # Add the detailed description if available
+  # IMPORTANT: endpoint$description can also be a vector
   description <- if (
     !is.null(endpoint$description) &&
-      length(endpoint$description) > 0 &&
-      !is.na(endpoint$description) &&
-      nchar(trimws(endpoint$description)) > 0
+      length(endpoint$description) > 0
   ) {
-    trimws(endpoint$description)
+    # Filter out NAs, trim, and remove empty strings
+    desc_clean <- endpoint$description[!is.na(endpoint$description)]
+    desc_trimmed <- trimws(desc_clean)
+    desc_nonempty <- desc_trimmed[nchar(desc_trimmed) > 0]
+
+    if (length(desc_nonempty) > 0) {
+      # Prioritize first element (plumber-specific documentation)
+      desc_nonempty[1]
+    } else {
+      ""
+    }
   } else {
     ""
   }
 
-  # Build the complete description
-  result <- title
+  # Build the complete description (always a single string)
+  result <- as.character(title)[1] # Ensure single string
 
-  if (description != "" && description != title) {
+  if (nchar(description) > 0 && description != title) {
     result <- paste(result, "\n\n", description, sep = "")
   }
 
@@ -371,7 +390,9 @@ create_enhanced_description <- function(endpoint, verb, path) {
     sep = ""
   )
 
-  result
+  # CRITICAL: Always return a single string, never an array
+  # This ensures MCP schema compliance (description must be string, not string[])
+  as.character(result)[1]
 }
 
 #' Create enhanced input schema using Plumber's parsed roxygen information
@@ -586,7 +607,7 @@ convert_default_to_json_type <- function(default_val, json_type) {
         "integer" = as.integer(evaluated_val),
         "number" = as.numeric(evaluated_val),
         "string" = as.character(evaluated_val),
-        "array" = as.list(evaluated_val),  # Arrays should be lists in JSON
+        "array" = as.list(evaluated_val), # Arrays should be lists in JSON
         evaluated_val
       )
     },
