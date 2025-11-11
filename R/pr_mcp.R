@@ -509,6 +509,33 @@ map_plumber_type_to_json_schema <- function(plumber_type) {
   mapped_type
 }
 
+#' Safely evaluate a default parameter value
+#' @noRd
+evaluate_default_value <- function(default_val) {
+  if (missing(default_val)) {
+    return(NULL)
+  }
+
+  # If it's already a simple value (not a language object), return as-is
+  if (!is.language(default_val)) {
+    return(default_val)
+  }
+
+  # Try to evaluate the expression safely
+  tryCatch(
+    {
+      # Evaluate in an empty environment to avoid side effects
+      # But include base functions like c(), list(), etc.
+      eval(default_val, envir = baseenv())
+    },
+    error = function(e) {
+      # If evaluation fails, return NULL
+      # This handles cases where the default references undefined variables
+      NULL
+    }
+  )
+}
+
 #' Infer JSON Schema type from default value
 #' @noRd
 infer_type_from_default_value <- function(default_val) {
@@ -516,12 +543,22 @@ infer_type_from_default_value <- function(default_val) {
     return("string")
   }
 
-  if (is.logical(default_val)) {
+  # Evaluate the default value if it's a language object
+  evaluated_val <- evaluate_default_value(default_val)
+
+  if (is.null(evaluated_val)) {
+    return("string")
+  }
+
+  if (is.logical(evaluated_val)) {
     return("boolean")
-  } else if (is.integer(default_val)) {
+  } else if (is.integer(evaluated_val)) {
     return("integer")
-  } else if (is.numeric(default_val)) {
+  } else if (is.numeric(evaluated_val)) {
     return("number")
+  } else if (length(evaluated_val) > 1) {
+    # If it's a vector with multiple elements, it's an array
+    return("array")
   } else {
     return("string")
   }
@@ -534,19 +571,31 @@ convert_default_to_json_type <- function(default_val, json_type) {
     return(NULL)
   }
 
+  # Evaluate the default value if it's a language object
+  evaluated_val <- evaluate_default_value(default_val)
+
+  if (is.null(evaluated_val)) {
+    return(NULL)
+  }
+
   tryCatch(
     {
       switch(
         json_type,
-        "boolean" = as.logical(default_val),
-        "integer" = as.integer(default_val),
-        "number" = as.numeric(default_val),
-        "string" = as.character(default_val),
-        default_val
+        "boolean" = as.logical(evaluated_val),
+        "integer" = as.integer(evaluated_val),
+        "number" = as.numeric(evaluated_val),
+        "string" = as.character(evaluated_val),
+        "array" = as.list(evaluated_val),  # Arrays should be lists in JSON
+        evaluated_val
       )
     },
     error = function(e) {
-      as.character(default_val)
+      # Fallback: try to convert to character, or return as-is if that fails
+      tryCatch(
+        as.character(evaluated_val),
+        error = function(e2) evaluated_val
+      )
     }
   )
 }

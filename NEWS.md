@@ -6,6 +6,16 @@
   - This is a breaking change for clients still using the old protocol version
   - Clients must support protocol version 2025-06-18 to communicate with this version
 
+## Critical Bug Fixes
+
+* **Fixed default parameter value serialization** (#issue-tbd)
+  - Default values using `c()`, `list()`, and other R expressions are now correctly evaluated
+  - Previously, `c("a", "b")` was serialized as `["c", "a", "b"]` (incorrect)
+  - Now correctly serialized as `["a", "b"]` (correct)
+  - This fixes Claude Desktop compatibility issues where tools were disabled due to invalid schemas
+  - Added comprehensive test suite (22 new tests) for default value handling
+  - Fixes validation errors: "malformed default" in MCP schema validators
+
 ## New Features
 
 ### MCP Protocol 2025-06-18 Support
