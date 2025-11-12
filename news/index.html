@@ -58,6 +58,17 @@
 <li>Added comprehensive test suite (22 new tests) for default value handling</li>
 <li>Fixes validation errors: “malformed default” in MCP schema validators</li>
 </ul></li>
+<li>
+<strong>Fixed description field being array instead of string</strong> (#issue-tbd)
+<ul><li>When endpoints had multiple documentation sources (plumber + roxygen), description was an array</li>
+<li>Previously: <code>{"description": ["First doc", "Second doc"]}</code> (incorrect - violates MCP spec)</li>
+<li>Now: <code>{"description": "First doc"}</code> (correct - single string as required by MCP spec)</li>
+<li>Prioritizes plumber-specific documentation (#* comments) over roxygen docs (#’ comments)</li>
+<li>Filters out NA values and empty strings before processing</li>
+<li>This fixes Claude Desktop showing servers as disabled/grayed out</li>
+<li>Added comprehensive test suite (17 new tests) for description handling</li>
+<li>Ensures strict MCP schema compliance</li>
+</ul></li>
 </ul></div>
 <div class="section level3">
 <h3 id="new-features-0-4-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-4-0"></a></h3>

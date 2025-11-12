@@ -3,7 +3,7 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   getting-started: getting-started.html
-last_built: 2025-11-11T23:42Z
+last_built: 2025-11-11T23:59Z
 urls:
   reference: https://armish.github.io/plumber2mcp/reference
   article: https://armish.github.io/plumber2mcp/articles
