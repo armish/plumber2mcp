@@ -163,6 +163,14 @@ Customize your MCP server with:
 
 - Plumber Documentation: <https://www.rplumber.io>
 
+## See also
+
+Useful links:
+
+- <https://github.com/armish/plumber2mcp>
+
+- Report bugs at <https://github.com/armish/plumber2mcp/issues>
+
 ## Author
 
 **Maintainer**: Bulent Arman Aksoy <arman@aksoy.org>
