@@ -174,6 +174,5 @@
 #'   )
 #' }
 #'
-#' @docType package
 #' @name plumber2mcp-package
 NULL

@@ -2,6 +2,7 @@
 % Please edit documentation in R/plumber2mcp-package.R
 \docType{package}
 \name{plumber2mcp-package}
+\alias{plumber2mcp}
 \alias{plumber2mcp-package}
 \title{plumber2mcp: Add Model Context Protocol Support to Plumber APIs}
 \description{
@@ -189,6 +190,14 @@ pr \%>\%
     description = "Get help with the API",
     func = function() "How can I help you use this API?"
   )
+}
+
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/armish/plumber2mcp}
+  \item Report bugs at \url{https://github.com/armish/plumber2mcp/issues}
 }
 
 }
